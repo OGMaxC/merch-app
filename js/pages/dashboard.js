@@ -8,11 +8,18 @@ registerPage('dashboard', async (container) => {
         <div class="page-sub">Overview — ${new Date().toLocaleDateString('sv-SE', {weekday:'long', day:'numeric', month:'long'})}</div>
       </div>
     </div>
-    <div class="stat-grid" id="dash-stats">
+    <div class="stat-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:10px">
       <div class="stat-card"><div class="stat-label">Total items</div><div class="stat-value" id="d-items">—</div></div>
       <div class="stat-card"><div class="stat-label">Units in stock</div><div class="stat-value" id="d-units">—</div></div>
-      <div class="stat-card"><div class="stat-label">Stock value</div><div class="stat-value gold" id="d-value">—</div></div>
-      <div class="stat-card"><div class="stat-label">Low stock</div><div class="stat-value amber" id="d-low">—</div></div>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Stock valuation</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
+      <div class="stat-card"><div class="stat-label">Cost in stock</div><div class="stat-value" id="d-cost">—</div></div>
+      <div class="stat-card"><div class="stat-label">Sale value</div><div class="stat-value gold" id="d-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Potential margin</div><div class="stat-value green" id="d-margin">—</div></div>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:24px">
+      <div class="stat-card"><div class="stat-label">Low stock alerts</div><div class="stat-value amber" id="d-low">—</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div class="section">
@@ -48,11 +55,15 @@ registerPage('dashboard', async (container) => {
 
     /* stats */
     const totalUnits = items.reduce((s, i) => s + (i.totalStock || 0), 0);
-    const totalValue = items.reduce((s, i) => s + (i.totalStock || 0) * (i.salePrice || 0), 0);
+    const totalCost   = items.reduce((s, i) => s + (i.totalStock || 0) * (i.costPerUnit || 0), 0);
+    const totalValue  = items.reduce((s, i) => s + (i.totalStock || 0) * (i.salePrice || 0), 0);
+    const totalMargin = totalValue - totalCost;
     const lowItems   = items.filter(i => (i.totalStock || 0) > 0 && (i.totalStock || 0) <= 5);
     document.getElementById('d-items').textContent  = fmtNum(items.length);
     document.getElementById('d-units').textContent  = fmtNum(totalUnits);
+    document.getElementById('d-cost').textContent   = fmt(totalCost);
     document.getElementById('d-value').textContent  = fmt(totalValue);
+    document.getElementById('d-margin').textContent = fmt(totalMargin);
     document.getElementById('d-low').textContent    = fmtNum(lowItems.length);
 
     /* next show */
