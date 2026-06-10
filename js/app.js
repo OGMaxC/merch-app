@@ -69,9 +69,9 @@ async function checkÅterställTrigger() {
 
     try {
       const collections = ['merch_items', 'merch_shows', 'merch_transactions', 'merch_designs'];
-      for (const col av collections) {
+      for (const col of collections) {
         const docs = await fsGetAll(col);
-        await Promise.all(docs.map(d => fsTa bort(col, d.id)));
+        await Promise.all(docs.map(d => fsDelete(col, d.id)));
       }
       // Clear any localStorage tally drafts
       Object.keys(localStorage)
