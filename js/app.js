@@ -68,7 +68,7 @@ async function checkÅterställTrigger() {
     document.getElementById('reset-confirm-btn').disabled = true;
 
     try {
-      const collections = ['merch_items', 'merch_shows', 'merch_transactions', 'merch_designs'];
+      const collections = ['merch_items', 'merch_shows', 'merch_transactions'];
       for (const col of collections) {
         const docs = await fsGetAll(col);
         await Promise.all(docs.map(d => fsDelete(col, d.id)));

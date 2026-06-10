@@ -101,7 +101,7 @@ registerPage('dashboard', async (container) => {
     /* low stock */
     document.getElementById('dash-low-stock').innerHTML = lowItems.length
       ? `<div class="card"><div class="table-wrap"><table>
-          <thead><tr><th>Item</th><th>Kategori</th><th>Stock</th><th>Sale price</th></tr></thead>
+          <thead><tr><th>Artikel</th><th>Kategori</th><th>Lager</th><th>Pris</th></tr></thead>
           <tbody>${lowItems.map(i => `<tr>
             <td style="font-weight:500">${i.name}</td>
             <td>${catBadge(i.category)}</td>
@@ -109,7 +109,7 @@ registerPage('dashboard', async (container) => {
             <td style="color:var(--gold)">${fmt(i.salePrice||0)}</td>
           </tr>`).join('')}</tbody>
         </table></div></div>`
-      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">Alla artiklar well stocked.</div></div>`;
+      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">Alla artiklar har tillräckligt lager.</div></div>`;
 
   } catch (err) {
     console.error('Översikt error:', err);

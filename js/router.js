@@ -6,7 +6,6 @@ const ROUTES = {
   '/shows':      'shows',
   '/investment': 'investment',
   '/reports':    'reports',
-  '/designs':    'designs',
 };
 
 const PAGES = {};

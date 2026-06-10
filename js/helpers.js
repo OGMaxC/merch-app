@@ -4,9 +4,9 @@
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.classNamn = `toast show ${type}`;
+  el.className = `toast show ${type}`;
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => { el.classNamn = 'toast'; }, 2800);
+  window._toastTimer = setTimeout(() => { el.className = 'toast'; }, 2800);
 }
 
 /* ── MODAL ── */

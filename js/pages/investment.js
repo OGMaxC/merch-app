@@ -170,7 +170,7 @@ async function savePayment() {
 
   try {
     await fsAdd('merch_transactions', data);
-    showToast('Payment loggad');
+    showToast('Betalning loggad');
     closeModal();
     await renderInvestering();
   } catch(err) {
@@ -179,7 +179,7 @@ async function savePayment() {
 }
 
 async function deleteTransaction(id) {
-  confirmAction('Ta bort this transaction?', async () => {
+  confirmAction('Ta bort den här transaktionen?', async () => {
     await fsDelete('merch_transactions', id);
     showToast('Transaktion borttagen');
     await renderInvestering();

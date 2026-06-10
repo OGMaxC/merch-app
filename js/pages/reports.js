@@ -78,8 +78,8 @@ async function renderRapporter() {
       <div class="stat-grid" style="margin-bottom:24px">
         <div class="stat-card"><div class="stat-label">Total intäkt</div><div class="stat-value gold">${fmt(totalRevenue)}</div></div>
         <div class="stat-card"><div class="stat-label">Produktionskostnader</div><div class="stat-value">${fmt(totalCost)}</div></div>
-        <div class="stat-card"><div class="stat-label">Net profit</div><div class="stat-value ${profit>=0?'green':'red'}">${fmt(profit)}</div></div>
-        <div class="stat-card"><div class="stat-label">Spelningar avslutadd</div><div class="stat-value">${doneShows.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Nettoresultat</div><div class="stat-value ${profit>=0?'green':'red'}">${fmt(profit)}</div></div>
+        <div class="stat-card"><div class="stat-label">Avslutade spelningar</div><div class="stat-value">${doneShows.length}</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
@@ -117,7 +117,7 @@ async function renderRapporter() {
                   </div>
                   <div style="font-size:12px;color:var(--gold);white-space:nowrap">${fmt(s.earned)}</div>
                 </div>`).join('')
-              : `<div style="color:var(--text3);font-size:13px">No avslutadd shows yet.</div>`}
+              : `<div style="color:var(--text3);font-size:13px">Inga avslutade spelningar ännu.</div>`}
             </div>
           </div>
         </div>

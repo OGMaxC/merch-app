@@ -53,7 +53,7 @@ function showRow(s) {
     </div>
     <div style="display:flex;align-items:center;gap:16px">
       ${earned > 0 ? `<span style="color:var(--gold);font-size:13px">${fmt(earned)}</span>` : ''}
-      <span class="badge badge-${s.status==='kommande'?'kommande':'avslutad'}">${s.status}</span>
+      <span class="badge badge-${s.status==='upcoming'?'upcoming':'complete'}">${s.status === 'upcoming' ? 'Kommande' : 'Avslutad'}</span>
       <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openRedigeraShow('${s.id}')">Redigera</button>
     </div>
   </div>`;
@@ -82,8 +82,8 @@ function buildShowForm(s) {
       <div class="field"><label>Datum</label><input id="sf-date" type="date" value="${s?.date||''}"/></div>
       <div class="field"><label>Status</label>
         <select id="sf-status">
-          <option value="upcoming" ${(s?.status||'kommande')==='kommande'?'selected':''}>Kommande</option>
-          <option value="complete" ${s?.status==='avslutad'?'selected':''}>Complete</option>
+          <option value="upcoming" ${(s?.status||'upcoming')==='upcoming'?'selected':''}>Kommande</option>
+          <option value="complete" ${s?.status==='complete'?'selected':''}>Avslutad</option>
         </select>
       </div>
     </div>
@@ -95,7 +95,7 @@ function buildShowForm(s) {
 
 async function saveShow(id) {
   const name = document.getElementById('sf-name')?.value?.trim();
-  if (!name) { showToast('Namn is required', 'error'); return; }
+  if (!name) { showToast('Namn krävs', 'error'); return; }
   const data = {
     name,
     date:   document.getElementById('sf-date').value,
@@ -134,7 +134,7 @@ async function openShowDetail(id) {
   window._currentItems = allItems;
 
   // Restore tally from localStorage if available
-  const saved = localStorage.getArtikel(`tally-${id}`);
+  const saved = localStorage.getItem(`tally-${id}`);
   window._tallySales = saved ? JSON.parse(saved) : {};
 
   const container = document.getElementById('page-content');
@@ -236,9 +236,9 @@ function tallyBlock(item, show) {
             </div>
             <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;
               border-left:1px solid var(--border);align-self:stretch">
-              <button class="tally-btn" onclick="tallyAdj('${item.id}','${color}','${sz}',-1,'${item.salePris}')">−</button>
+              <button class="tally-btn" onclick="tallyAdj('${item.id}','${color}','${sz}',-1,'${item.salePrice}')">−</button>
               <span class="tally-num" id="sålda-${item.id}-${color}-${sz}">0</span>
-              <button class="tally-btn plus" onclick="tallyAdj('${item.id}','${color}','${sz}',1,'${item.salePris}')">+</button>
+              <button class="tally-btn plus" onclick="tallyAdj('${item.id}','${color}','${sz}',1,'${item.salePrice}')">+</button>
             </div>
           </div>`;
         }).join('');
@@ -253,9 +253,9 @@ function tallyBlock(item, show) {
             <div style="font-size:10px;color:var(--text3);margin-top:2px">i lager</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-left:1px solid var(--border)">
-            <button class="tally-btn" onclick="tallyAdj('${item.id}','_','_',-1,'${item.salePris}')">−</button>
+            <button class="tally-btn" onclick="tallyAdj('${item.id}','_','_',-1,'${item.salePrice}')">−</button>
             <span class="tally-num" id="sålda-${item.id}-_-_">0</span>
-            <button class="tally-btn plus" onclick="tallyAdj('${item.id}','_','_',1,'${item.salePris}')">+</button>
+            <button class="tally-btn plus" onclick="tallyAdj('${item.id}','_','_',1,'${item.salePrice}')">+</button>
           </div>
         </div>`;
       })();
@@ -269,11 +269,11 @@ function tallyBlock(item, show) {
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
           <div style="font-weight:500">${item.name}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${item.colors?.join(' / ')||''} · ${fmt(item.salePris||0)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${item.colors?.join(' / ')||''} · ${fmt(item.salePrice||0)}</div>
         </div>
         <div style="display:flex;align-items:center;gap:12px">
           <span id="item-sålda-label-${item.id}" style="font-size:12px;color:${itemSålda>0?'var(--gold)':'var(--text3)'}">
-            ${itemSålda > 0 ? `${itemSålda} sålda · ${fmt(itemSålda*(item.salePris||0))}` : 'ingen försäljning ännu'}
+            ${itemSålda > 0 ? `${itemSålda} sålda · ${fmt(itemSålda*(item.salePrice||0))}` : 'ingen försäljning ännu'}
           </span>
           <span id="chevron-${item.id}" style="color:var(--text3);font-size:16px">&#8964;</span>
         </div>
@@ -300,7 +300,13 @@ function tallyAdj(itemId, color, sz, delta, price) {
   if (!item) return;
 
   const v     = (item.variants?.[color] || {})?.[sz] || { stock: 0, sålda: 0 };
-  const max   = v.stock || 0;
+  // Cap at packQty (what was brought to the show), not total inventory stock
+  const packMax = (() => {
+    const show = window._currentShow;
+    const packEntry = (show?.pack || []).find(p => p.itemId === itemId);
+    return packEntry?.qty ?? (v.stock || 0);
+  })();
+  const max   = Math.min(v.stock || 0, packMax);
 
   if (!window._tallySales[key]) window._tallySales[key] = { itemId, color, sz, qty: 0, price: parseFloat(price) || 0 };
   const s     = window._tallySales[key];
@@ -312,7 +318,7 @@ function tallyAdj(itemId, color, sz, delta, price) {
   const rem    = max - s.qty;
 
   if (såldaEl) såldaEl.textContent = s.qty;
-  if (remEl)  { remEl.textContent = rem; remEl.classNamn = stockClass(rem); }
+  if (remEl)  { remEl.textContent = rem; remEl.className = stockClass(rem); }
   if (rowEl)  rowEl.style.opacity = rem === 0 ? '0.4' : '1';
 
   const itemSålda = Object.values(window._tallySales).filter(x => x.itemId === itemId).reduce((sum, x) => sum + x.qty, 0);
@@ -344,7 +350,7 @@ function tallyStorageKey() {
 function tallyLocalSave() {
   const key = tallyStorageKey();
   if (!key) return;
-  localStorage.setArtikel(key, JSON.stringify(window._tallySales));
+  localStorage.setItem(key, JSON.stringify(window._tallySales));
   const el = document.getElementById('tally-save-indicator');
   if (el) {
     el.textContent = 'Saved ' + new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -373,6 +379,41 @@ function scheduleFirestoreSave() {
 }
 
 async function reconcileShow(id) {
+  const sales = Object.values(window._tallySales || {}).filter(s => s.qty > 0);
+  const total = sales.reduce((sum, s) => sum + s.qty * s.price, 0);
+  const notes = document.getElementById('show-notes')?.value || '';
+
+  // Build a preview of what will be deducted
+  const previewLines = sales.map(s => {
+    const item = window._currentItems?.find(i => i.id === s.itemId);
+    const name = item?.name || s.itemId;
+    const variant = s.color !== '_' ? ` ${s.color}/${s.sz}` : '';
+    return `<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--bg3)">
+      <span style="color:var(--text2)">${name}${variant}</span>
+      <span style="color:var(--text)">${s.qty} st &nbsp;·&nbsp; <span style="color:var(--gold)">${fmt(s.qty * s.price)}</span></span>
+    </div>`;
+  }).join('');
+
+  const noSales = sales.length === 0;
+
+  openModal('Stäng spelning — bekräfta',
+    `<div style="margin-bottom:12px;font-size:13px;color:var(--text2)">
+      Följande avdras permanent från lagret och loggas som försäljning. Det går inte att ångra.
+    </div>
+    ${noSales
+      ? `<div style="font-size:13px;color:var(--text3);padding:12px 0">Ingen försäljning registrerad.</div>`
+      : `<div style="margin-bottom:12px">${previewLines}</div>
+         <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:500;padding-top:8px">
+           <span>Totalt</span>
+           <span style="color:var(--gold)">${fmt(total)}</span>
+         </div>`}
+    ${notes ? `<div style="font-size:11px;color:var(--text3);margin-top:10px">Anteckning: ${notes}</div>` : ''}`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-primary" onclick="closeModal();_doReconcile('${id}')">Bekräfta och stäng show</button>`
+  );
+}
+
+async function _doReconcile(id) {
   const sales = Object.values(window._tallySales || {}).filter(s => s.qty > 0);
   const total = sales.reduce((sum, s) => sum + s.qty * s.price, 0);
   const notes = document.getElementById('show-notes')?.value || '';
@@ -406,7 +447,7 @@ async function reconcileShow(id) {
       });
     }
 
-    localStorage.removeArtikel(tallyStorageKey());
+    localStorage.removeItem(tallyStorageKey());
     showToast(`Spelning avslutad — ${fmt(total)} loggad`);
     navigate('/shows');
   } catch(err) {
@@ -449,7 +490,7 @@ async function savePack(showId) {
   }).filter(Boolean);
 
   await fsSet('merch_shows', showId, { ...show, pack });
-  showToast('Pack saved');
+  showToast('Pack sparat');
   closeModal();
   navigate('/shows');
 }
@@ -477,7 +518,7 @@ function buildPrintSheet(show, packedItems) {
         }).join('');
         return `<tr>
           <td style="${tdStyle}font-size:12px;font-weight:600;min-width:140px">${item.name}<br><span style="font-size:10px;color:#666;font-weight:400">${color}</span></td>
-          <td style="${tdStyle}font-size:12px;text-align:center;white-space:nowrap;min-width:56px">${item.salePris} kr</td>
+          <td style="${tdStyle}font-size:12px;text-align:center;white-space:nowrap;min-width:56px">${item.salePrice} kr</td>
           <td style="${tdStyle}">${sizeHTML}</td>
           <td style="${tdStyle}min-width:70px">&nbsp;</td>
         </tr>`;
@@ -486,7 +527,7 @@ function buildPrintSheet(show, packedItems) {
       const n = item.variants?.['_']?.stock || 0;
       return `<tr>
         <td style="${tdStyle}font-size:12px;font-weight:600;min-width:140px">${item.name}</td>
-        <td style="${tdStyle}font-size:12px;text-align:center;white-space:nowrap;min-width:56px">${item.salePris} kr</td>
+        <td style="${tdStyle}font-size:12px;text-align:center;white-space:nowrap;min-width:56px">${item.salePrice} kr</td>
         <td style="${tdStyle}">${Array(Math.min(n,20)).fill(box).join('')}</td>
         <td style="${tdStyle}min-width:70px">&nbsp;</td>
       </tr>`;

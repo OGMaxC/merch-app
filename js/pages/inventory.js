@@ -255,7 +255,7 @@ function buildSizeGrid(item) {
 
 async function saveItem(id) {
   const name = document.getElementById('f-name')?.value?.trim();
-  if (!name) { showToast('Namn is required', 'error'); return; }
+  if (!name) { showToast('Namn krävs', 'error'); return; }
 
   const category   = document.getElementById('f-cat').value;
   const status     = document.getElementById('f-status').value;
@@ -267,18 +267,25 @@ async function saveItem(id) {
   let totalStock = 0;
 
   if (category === 'clothing') {
+    // Load existing item from Firestore to preserve sålda counts when editing
+    const existingItem = id ? await fsGet('merch_items', id) : null;
+    const existingVariants = existingItem?.variants || {};
+
     const colors = [...document.querySelectorAll('[id^="fc-"]:checked')].map(el => el.value);
     for (const color of colors) {
       variants[color] = {};
       for (const sz of ALL_SIZES) {
         const n = parseInt(document.getElementById(`fs-${color}-${sz}`)?.value) || 0;
-        variants[color][sz] = { stock: n, sålda: id ? (variants?.[color]?.[sz]?.sålda || 0) : 0 };
+        const existingSålda = existingVariants?.[color]?.[sz]?.sålda || 0;
+        variants[color][sz] = { stock: n, sålda: existingSålda };
         totalStock += n;
       }
     }
   } else {
     const n = parseInt(document.getElementById('f-stock')?.value) || 0;
-    variants['_'] = { stock: n, sålda: 0 };
+    const existingItem = id ? await fsGet('merch_items', id) : null;
+    const existingSålda = existingItem?.variants?.['_']?.sålda || 0;
+    variants['_'] = { stock: n, sålda: existingSålda };
     totalStock = n;
   }
 
@@ -305,7 +312,7 @@ async function saveItem(id) {
 }
 
 async function deleteItem(id, name) {
-  confirmAction(`Ta bort "${name}"? This cannot be undone.`, async () => {
+  confirmAction(`Ta bort "${name}"? Det går inte att ångra.`, async () => {
     await fsDelete('merch_items', id);
     showToast('Artikel borttagen');
     await renderLager();
