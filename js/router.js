@@ -23,7 +23,7 @@ async function navigate(path) {
   });
 
   const container = document.getElementById('page-content');
-  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">Loading…</div>';
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)">Laddar…</div>';
 
   if (PAGES[page]) {
     await PAGES[page](container);
