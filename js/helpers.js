@@ -4,9 +4,9 @@
 function showToast(msg, type = 'success') {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = `toast show ${type}`;
+  el.classNamn = `toast show ${type}`;
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(() => { el.className = 'toast'; }, 2800);
+  window._toastTimer = setTimeout(() => { el.classNamn = 'toast'; }, 2800);
 }
 
 /* ── MODAL ── */
@@ -26,28 +26,28 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 /* ── FORMATTING ── */
 function fmt(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
 function fmtNum(n) { return Math.round(n).toLocaleString('sv-SE'); }
-function fmtDate(iso) {
+function fmtDatum(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Datum(iso).toLocaleDatumString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
 }
-function fmtShortDate(iso) {
+function fmtShortDatum(iso) {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+  return new Datum(iso).toLocaleDatumString('sv-SE', { day: 'numeric', month: 'short' });
 }
 
-/* ── STOCK STATUS ── */
+/* ── LAGER STATUS ── */
 function stockClass(rem) {
   if (rem === 0) return 'stock-out';
   if (rem <= 3)  return 'stock-low';
   return 'stock-ok';
 }
 
-/* ── CATEGORY BADGE ── */
+/* ── KATEGORI BADGE ── */
 function catBadge(cat) {
   return `<span class="badge badge-${cat||'other'}">${cat||'other'}</span>`;
 }
 
-/* ── COLOURS MAP ── */
+/* ── FÄRGER MAP ── */
 const COLOR_HEX = {
   black:   '#111111',
   white:   '#EEEEEE',
@@ -78,10 +78,10 @@ function emptyState(icon, msg, action = '') {
 }
 
 /* ── CONFIRM ── */
-function confirmAction(msg, onConfirm) {
-  window._confirmCallback = onConfirm;
-  openModal('Confirm', `<p style="color:var(--text2);font-size:13px">${msg}</p>`,
-    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-danger" onclick="closeModal();window._confirmCallback()">Confirm</button>`
+function confirmAction(msg, onBekräfta) {
+  window._confirmCallback = onBekräfta;
+  openModal('Bekräfta', `<p style="color:var(--text2);font-size:13px">${msg}</p>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-danger" onclick="closeModal();window._confirmCallback()">Bekräfta</button>`
   );
 }
