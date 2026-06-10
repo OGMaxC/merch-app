@@ -240,9 +240,15 @@ function tallyBlock(item, show) {
   const sizeRows = isClothing
     ? colors.map(color => {
         const varStocks = item.variants?.[color] || {};
-        return ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0).map(sz => {
+        // Show sizes that have stock OR have previously sold units (for reopened shows).
+        // originalQty = stock + sålda reconstructs what was in the pack before reconcile.
+        return ALL_SIZES.filter(sz => {
+          const v = varStocks[sz] || {};
+          return (v.stock || 0) + (v.sålda || 0) > 0;
+        }).map(sz => {
           const v   = varStocks[sz] || { stock: 0, sålda: 0 };
-          const packRem = v.stock - (v.sålda || 0);
+          const originalQty = (v.stock || 0) + (v.sålda || 0);
+          const packRem = originalQty;
           return `<div class="size-row" id="sr-${item.id}-${color}-${sz}"
             style="display:grid;grid-template-columns:52px 1fr auto;align-items:center;
             background:var(--bg3);border-radius:8px;border:1px solid var(--border);
@@ -316,14 +322,12 @@ function restoreTallyUI() {
     const item = window._currentItems?.find(i => i.id === s.itemId);
     if (!item) continue;
 
-    // Determine max for this variant (same logic as tallyAdj)
-    const v = (s.color === '_')
-      ? (item.variants?.['_'] || { stock: 0 })
-      : ((item.variants?.[s.color] || {})?.[s.sz] || { stock: 0 });
+    // Use pack quantity as the ceiling — NOT current inventory stock.
+    // After reconcile, inventory stock has already been decremented, so
+    // using it would give wrong (or negative) remainders for sold-out items.
     const packEntry = (window._currentShow?.pack || []).find(p => p.itemId === s.itemId);
-    const packMax = packEntry?.qty ?? (v.stock || 0);
-    const max = Math.min(v.stock || 0, packMax);
-    const rem = max - s.qty;
+    const packMax = packEntry?.qty ?? s.qty;
+    const rem = Math.max(0, packMax - s.qty);
 
     // Update sold counter
     const såldaEl = document.getElementById(`sålda-${s.itemId}-${s.color}-${s.sz}`);
@@ -385,13 +389,16 @@ function tallyAdj(itemId, color, sz, delta, price) {
   const v = (color === '_')
     ? (item.variants?.['_'] || { stock: 0, sålda: 0 })
     : ((item.variants?.[color] || {})?.[sz] || { stock: 0, sålda: 0 });
-  // Cap at packQty (what was brought to the show), not total inventory stock
+  // originalQty = stock + sålda reconstructs pre-reconcile pack quantity.
+  // Using v.stock alone would be 0 for sold-out items after reconcile.
+  const originalQty = (v.stock || 0) + (v.sålda || 0);
+  // For non-clothing items the pack has a single qty; use that when available.
   const packMax = (() => {
     const show = window._currentShow;
     const packEntry = (show?.pack || []).find(p => p.itemId === itemId);
-    return packEntry?.qty ?? (v.stock || 0);
+    return (color === '_') ? (packEntry?.qty ?? originalQty) : originalQty;
   })();
-  const max   = Math.min(v.stock || 0, packMax);
+  const max = packMax;
 
   if (!window._tallySales[key]) window._tallySales[key] = { itemId, color, sz, qty: 0, price: parseFloat(price) || 0 };
   const s     = window._tallySales[key];
