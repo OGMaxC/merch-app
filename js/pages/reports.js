@@ -22,8 +22,8 @@ async function renderRapporter() {
       fsGetAll('merch_transactions'),
     ]);
 
-    const saleTxns     = transactions.filter(t => t.typee === 'sale');
-    const prodTxns     = transactions.filter(t => t.typee === 'production');
+    const saleTxns     = transactions.filter(t => t.type === 'sale');
+    const prodTxns     = transactions.filter(t => t.type === 'production');
     const totalRevenue = saleTxns.reduce((s, t) => s + (t.amount||0), 0);
     const totalCost    = prodTxns.reduce((s, t) => s + (t.amount||0), 0);
     const profit       = totalRevenue - totalCost;
