@@ -132,7 +132,10 @@ async function openShowDetail(id) {
 
   window._currentShow = show;
   window._currentItems = allItems;
-  window._tallySales = {};
+
+  // Restore tally from localStorage if available
+  const saved = localStorage.getItem(`tally-${id}`);
+  window._tallySales = saved ? JSON.parse(saved) : {};
 
   const container = document.getElementById('page-content');
   renderShowDetail(show, allItems, container);
@@ -193,9 +196,14 @@ function renderShowDetail(show, allItems, container) {
       <div class="card" style="margin-top:10px">
         <div class="card-body">
           <div class="field"><label>Notes</label><input type="text" id="show-notes" value="${show.notes||''}" placeholder="Freebies, issues, anything odd…"/></div>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button class="btn btn-ghost" onclick="navigate('/shows')">Back</button>
-            <button class="btn btn-primary" onclick="reconcileShow('${show.id}')">Reconcile & close show</button>
+          <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+            <span id="tally-save-indicator" style="font-size:0.7rem;color:var(--text3)">
+              ${Object.keys(window._tallySales).length > 0 ? 'Restored from last session' : 'Autosaves on every tap'}
+            </span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" onclick="navigate('/shows')">Back</button>
+              <button class="btn btn-primary" onclick="reconcileShow('${show.id}')">Close show</button>
+            </div>
           </div>
         </div>
       </div>
@@ -323,6 +331,45 @@ function tallyAdj(itemId, color, sz, delta, price) {
   if (shSold)  shSold.textContent  = totalSold;
   if (shCash)  shCash.textContent  = fmt(totalCash);
   if (cashBig) cashBig.textContent = fmt(totalCash);
+
+  tallyLocalSave();
+  scheduleFirestoreSave();
+}
+
+// ── AUTOSAVE ──────────────────────────────────────────────────
+function tallyStorageKey() {
+  return window._currentShow ? `tally-${window._currentShow.id}` : null;
+}
+
+function tallyLocalSave() {
+  const key = tallyStorageKey();
+  if (!key) return;
+  localStorage.setItem(key, JSON.stringify(window._tallySales));
+  const el = document.getElementById('tally-save-indicator');
+  if (el) {
+    el.textContent = 'Saved ' + new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    el.style.color = 'var(--green)';
+  }
+}
+
+function tallyFirestoreSave() {
+  const show = window._currentShow;
+  if (!show) return;
+  const sales = Object.values(window._tallySales || {}).filter(s => s.qty > 0);
+  const total = sales.reduce((sum, s) => sum + s.qty * s.price, 0);
+  fsGet('merch_shows', show.id).then(s => {
+    if (!s) return;
+    fsSet('merch_shows', show.id, {
+      ...s,
+      draftTally: { sales, total, savedAt: now() }
+    });
+  }).catch(() => {});
+}
+
+let _firestoreSaveTimer = null;
+function scheduleFirestoreSave() {
+  clearTimeout(_firestoreSaveTimer);
+  _firestoreSaveTimer = setTimeout(tallyFirestoreSave, 10000);
 }
 
 async function reconcileShow(id) {
@@ -359,6 +406,7 @@ async function reconcileShow(id) {
       });
     }
 
+    localStorage.removeItem(tallyStorageKey());
     showToast(`Show reconciled — ${fmt(total)} logged`);
     navigate('/shows');
   } catch(err) {
