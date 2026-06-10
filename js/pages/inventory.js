@@ -268,9 +268,9 @@ async function saveItem(id) {
 
   if (category === 'clothing') {
     const colors = [...document.querySelectorAll('[id^="fc-"]:checked')].map(el => el.value);
-    for (const color av colors) {
+    for (const color of colors) {
       variants[color] = {};
-      for (const sz av ALL_SIZES) {
+      for (const sz of ALL_SIZES) {
         const n = parseInt(document.getElementById(`fs-${color}-${sz}`)?.value) || 0;
         variants[color][sz] = { stock: n, sålda: id ? (variants?.[color]?.[sz]?.sålda || 0) : 0 };
         totalStock += n;
@@ -306,7 +306,7 @@ async function saveItem(id) {
 
 async function deleteItem(id, name) {
   confirmAction(`Ta bort "${name}"? This cannot be undone.`, async () => {
-    await fsTa bort('merch_items', id);
+    await fsDelete('merch_items', id);
     showToast('Artikel borttagen');
     await renderLager();
   });
