@@ -3,25 +3,25 @@
 registerPage('inventory', async (container) => {
   container.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Inventory</div></div>
+      <div><div class="page-title">Lager</div></div>
       <div style="display:flex;gap:8px">
         <select id="inv-filter-cat" class="btn btn-ghost btn-sm" style="padding:5px 10px">
-          <option value="">All categories</option>
-          <option value="clothing">Clothing</option>
-          <option value="records">Records</option>
-          <option value="other">Other</option>
+          <option value="">Alla kategorier</option>
+          <option value="clothing">Kläder</option>
+          <option value="records">Skivor</option>
+          <option value="other">Övrigt</option>
         </select>
-        <button class="btn btn-primary btn-sm" onclick="openAddItem()">+ Add item</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddItem()">+ Lägg till artikel</button>
       </div>
     </div>
     <div id="inv-content"></div>
   `;
 
-  document.getElementById('inv-filter-cat').addEventListener('change', () => renderInventory());
-  await renderInventory();
+  document.getElementById('inv-filter-cat').addEventListener('change', () => renderLager());
+  await renderLager();
 });
 
-async function renderInventory() {
+async function renderLager() {
   const cat = document.getElementById('inv-filter-cat')?.value || '';
   const el  = document.getElementById('inv-content');
   if (!el) return;
@@ -33,14 +33,14 @@ async function renderInventory() {
     items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
     if (!items.length) {
-      el.innerHTML = emptyState('📦', 'No items yet.', '<button class="btn btn-primary" onclick="openAddItem()" style="margin-top:12px">Add your first item</button>');
+      el.innerHTML = emptyState('📦', 'Inga artiklar ännu.', '<button class="btn btn-primary" onclick="openAddItem()" style="margin-top:12px">Lägg till din första artikel</button>');
       return;
     }
 
     el.innerHTML = `<div class="card"><div class="table-wrap"><table>
       <thead><tr>
         <th style="width:35%">Item</th>
-        <th>Category</th>
+        <th>Kategori</th>
         <th>Colours</th>
         <th style="text-align:center">Stock</th>
         <th style="text-align:right">Cost</th>
@@ -73,19 +73,19 @@ async function renderInventory() {
         </td>
         <td>
           <div style="display:flex;gap:6px;justify-content:flex-end" onclick="event.stopPropagation()">
-            <button class="btn btn-ghost btn-sm" onclick="openEditItem('${item.id}')">Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}','${item.name}')">Delete</button>
+            <button class="btn btn-ghost btn-sm" onclick="openRedigeraItem('${item.id}')">Redigera</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}','${item.name}')">Ta bort</button>
           </div>
         </td>
       </tr>`;
     }).join('');
 
   } catch (err) {
-    el.innerHTML = `<div style="color:var(--red);padding:20px">Error: ${err.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red);padding:20px">Fel: ${err.message}</div>`;
   }
 }
 
-/* ── ITEM DETAIL (sizes/colours breakdown) ── */
+/* ── ARTIKEL DETAIL (sizes/colours breakdown) ── */
 async function openItemDetail(id) {
   const item = await fsGet('merch_items', id);
   if (!item) return;
@@ -103,7 +103,7 @@ async function openItemDetail(id) {
         return `<tr>
           <td style="color:var(--text2)">${sz}</td>
           <td><span class="${stockClass(rem)}">${rem}</span></td>
-          <td style="color:var(--text2)">${v.sold || 0}</td>
+          <td style="color:var(--text2)">${v.sålda || 0}</td>
         </tr>`;
       }).join('');
       return `<div style="margin-bottom:16px">
@@ -111,14 +111,14 @@ async function openItemDetail(id) {
           ${colorDot(color)} ${color}
         </div>
         <table style="width:200px">
-          <thead><tr><th>Size</th><th>Stock</th><th>Sold</th></tr></thead>
+          <thead><tr><th>Size</th><th>Stock</th><th>Sålda</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
     }).join('');
   } else {
-    const v   = variants['_'] || { stock: 0, sold: 0 };
-    varHTML   = `<div style="font-size:13px">Stock: <strong>${v.stock || 0}</strong> &nbsp; Sold: <strong>${v.sold || 0}</strong></div>`;
+    const v   = variants['_'] || { stock: 0, sålda: 0 };
+    varHTML   = `<div style="font-size:13px">Stock: <strong>${v.stock || 0}</strong> &nbsp; Sålda: <strong>${v.sålda || 0}</strong></div>`;
   }
 
   openModal(item.name,
@@ -131,65 +131,65 @@ async function openItemDetail(id) {
       <div>${varHTML}</div>
       ${item.notes ? `<div style="font-size:12px;color:var(--text2);border-top:1px solid var(--border);padding-top:12px">${item.notes}</div>` : ''}
     </div>`,
-    `<button class="btn btn-ghost" onclick="closeModal()">Close</button>
-     <button class="btn btn-primary" onclick="closeModal();openEditItem('${id}')">Edit</button>`
+    `<button class="btn btn-ghost" onclick="closeModal()">Stäng</button>
+     <button class="btn btn-primary" onclick="closeModal();openRedigeraItem('${id}')">Redigera</button>`
   );
 }
 
-/* ── ADD ITEM MODAL ── */
+/* ── ADD ARTIKEL MODAL ── */
 function openAddItem() {
-  openModal('Add item', buildItemForm(null),
-    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-primary" onclick="saveItem(null)">Add item</button>`
+  openModal('Lägg till artikel', buildItemForm(null),
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-primary" onclick="saveItem(null)">Lägg till artikel</button>`
   );
   setupItemFormListeners();
 }
 
-async function openEditItem(id) {
+async function openRedigeraItem(id) {
   const item = await fsGet('merch_items', id);
-  openModal('Edit item', buildItemForm(item),
-    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-primary" onclick="saveItem('${id}')">Save changes</button>`
+  openModal('Redigera artikel', buildItemForm(item),
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-primary" onclick="saveItem('${id}')">Spara ändringar</button>`
   );
   setupItemFormListeners(item);
 }
 
 function buildItemForm(item) {
-  const isClothing = !item || item.category === 'clothing';
+  const isKläder = !item || item.category === 'clothing';
   return `
     <div class="field">
-      <label>Name</label>
+      <label>Namn</label>
       <input id="f-name" type="text" value="${item?.name||''}"/>
     </div>
     <div class="field-row">
       <div class="field">
-        <label>Category</label>
+        <label>Kategori</label>
         <select id="f-cat">
-          <option value="clothing" ${item?.category==='clothing'?'selected':''}>Clothing</option>
-          <option value="records"  ${item?.category==='records'?'selected':''}>Records</option>
-          <option value="other"    ${item?.category==='other'?'selected':''}>Other</option>
+          <option value="clothing" ${item?.category==='clothing'?'selected':''}>Kläder</option>
+          <option value="records"  ${item?.category==='records'?'selected':''}>Skivor</option>
+          <option value="other"    ${item?.category==='other'?'selected':''}>Övrigt</option>
         </select>
       </div>
       <div class="field">
         <label>Status</label>
         <select id="f-status">
-          <option value="active"   ${(item?.status||'active')==='active'?'selected':''}>Active</option>
-          <option value="inactive" ${item?.status==='inactive'?'selected':''}>Inactive</option>
+          <option value="active"   ${(item?.status||'active')==='active'?'selected':''}>Aktiv</option>
+          <option value="inactive" ${item?.status==='inactive'?'selected':''}>Inaktiv</option>
         </select>
       </div>
     </div>
     <div class="field-row">
       <div class="field">
-        <label>Cost per unit (kr)</label>
+        <label>Kostnad per enhet (kr)</label>
         <input id="f-cost" type="number" value="${item?.costPerUnit||''}"/>
       </div>
       <div class="field">
-        <label>Sale price (kr)</label>
+        <label>Försäljningspris (kr)</label>
         <input id="f-price" type="number" value="${item?.salePrice||''}"/>
       </div>
     </div>
-    <div class="field" id="f-colors-wrap" style="${!isClothing?'display:none':''}">
-      <label>Base colours (check all that apply)</label>
+    <div class="field" id="f-colors-wrap" style="${!isKläder?'display:none':''}">
+      <label>Grundfärger (välj alla som stämmer)</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
         ${['black','white','burgundy','forest','navy','grey'].map(c =>
           `<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
@@ -199,15 +199,15 @@ function buildItemForm(item) {
         ).join('')}
       </div>
     </div>
-    <div class="field" id="f-stock-wrap" style="${isClothing?'display:none':''}">
-      <label>Initial stock</label>
+    <div class="field" id="f-stock-wrap" style="${isKläder?'display:none':''}">
+      <label>Initialt lagersaldo</label>
       <input id="f-stock" type="number" value="${item?.variants?.['_']?.stock||''}"/>
     </div>
-    <div id="f-size-grid" style="${!isClothing?'display:none':''}">
+    <div id="f-size-grid" style="${!isKläder?'display:none':''}">
       <!-- populated by JS -->
     </div>
     <div class="field">
-      <label>Notes</label>
+      <label>Anteckningar</label>
       <textarea id="f-notes">${item?.notes||''}</textarea>
     </div>
   `;
@@ -236,7 +236,7 @@ function buildSizeGrid(item) {
   if (!el) return;
   if (!colors.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = `<div class="field"><label>Stock per size</label>
+  el.innerHTML = `<div class="field"><label>Lager per storlek</label>
     ${colors.map(color => `
       <div style="margin-bottom:10px">
         <div style="font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:5px">
@@ -255,7 +255,7 @@ function buildSizeGrid(item) {
 
 async function saveItem(id) {
   const name = document.getElementById('f-name')?.value?.trim();
-  if (!name) { showToast('Name is required', 'error'); return; }
+  if (!name) { showToast('Namn is required', 'error'); return; }
 
   const category   = document.getElementById('f-cat').value;
   const status     = document.getElementById('f-status').value;
@@ -268,17 +268,17 @@ async function saveItem(id) {
 
   if (category === 'clothing') {
     const colors = [...document.querySelectorAll('[id^="fc-"]:checked')].map(el => el.value);
-    for (const color of colors) {
+    for (const color av colors) {
       variants[color] = {};
-      for (const sz of ALL_SIZES) {
+      for (const sz av ALL_SIZES) {
         const n = parseInt(document.getElementById(`fs-${color}-${sz}`)?.value) || 0;
-        variants[color][sz] = { stock: n, sold: id ? (variants?.[color]?.[sz]?.sold || 0) : 0 };
+        variants[color][sz] = { stock: n, sålda: id ? (variants?.[color]?.[sz]?.sålda || 0) : 0 };
         totalStock += n;
       }
     }
   } else {
     const n = parseInt(document.getElementById('f-stock')?.value) || 0;
-    variants['_'] = { stock: n, sold: 0 };
+    variants['_'] = { stock: n, sålda: 0 };
     totalStock = n;
   }
 
@@ -292,22 +292,22 @@ async function saveItem(id) {
   try {
     if (id) {
       await fsSet('merch_items', id, data);
-      showToast('Item updated');
+      showToast('Artikel uppdaterad');
     } else {
       await fsAdd('merch_items', data);
-      showToast('Item added');
+      showToast('Artikel tillagd');
     }
     closeModal();
-    await renderInventory();
+    await renderLager();
   } catch (err) {
-    showToast('Save failed: ' + err.message, 'error');
+    showToast('Sparningen misslyckades: ' + err.message, 'error');
   }
 }
 
 async function deleteItem(id, name) {
-  confirmAction(`Delete "${name}"? This cannot be undone.`, async () => {
-    await fsDelete('merch_items', id);
-    showToast('Item deleted');
-    await renderInventory();
+  confirmAction(`Ta bort "${name}"? This cannot be undone.`, async () => {
+    await fsTa bort('merch_items', id);
+    showToast('Artikel borttagen');
+    await renderLager();
   });
 }
