@@ -1,23 +1,23 @@
 /* ── TOKENS ──────────────────────────────────────────────────── */
 :root {
-  --bg:       #161310;
-  --bg2:      #1E1A13;
-  --bg3:      #272118;
-  --bg4:      #2F2A1E;
-  --border:   #38311F;
-  --border2:  #4A4128;
-  --gold:     #C8A24A;
-  --gold-dim: #7A6228;
-  --gold-bg:  #1E1A0E;
-  --text:     #E5D9B0;
-  --text2:    #968B65;
-  --text3:    #554E38;
-  --red:      #B84040;
-  --red-bg:   #1E1010;
-  --green:    #4A8850;
+  --bg:       #1A1610;
+  --bg2:      #232018;
+  --bg3:      #2E2A1E;
+  --bg4:      #3A3526;
+  --border:   #4A4230;
+  --border2:  #5E5438;
+  --gold:     #E2B84E;
+  --gold-dim: #A07C30;
+  --gold-bg:  #231E0E;
+  --text:     #F5EDD0;
+  --text2:    #C4B485;
+  --text3:    #8A7D58;
+  --red:      #E05050;
+  --red-bg:   #221212;
+  --green:    #5EAA64;
   --green-bg: #101E12;
-  --amber:    #B87830;
-  --amber-bg: #1E1608;
+  --amber:    #E09040;
+  --amber-bg: #221608;
   --radius:   8px;
   --radius-lg:12px;
 }
@@ -495,3 +495,85 @@ tr:hover td { background: var(--bg3); }
 .pipeline-item:hover { border-color: var(--border2); }
 .pipeline-item-name { font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 4px; }
 .pipeline-item-meta { font-size: 0.7rem; color: var(--text2); }
+
+/* ── MOBILE ──────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    display: none;
+  }
+  .main-area {
+    padding: 16px;
+  }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pipeline-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+  .field-row,
+  .field-row-3 {
+    grid-template-columns: 1fr;
+  }
+  table th:nth-child(n+4),
+  table td:nth-child(n+4) {
+    display: none;
+  }
+  .mobile-nav {
+    display: flex;
+  }
+}
+
+/* ── MOBILE NAV BAR (show pages) ─────────────────────────────── */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+}
+.mobile-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  font-size: 0.6rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: color 0.15s;
+}
+.mobile-nav a.active { color: var(--gold); }
+.mobile-nav a svg { width: 22px; height: 22px; }
+
+/* ── MOBILE SHOW TALLY ───────────────────────────────────────── */
+@media (max-width: 768px) {
+  .main-area {
+    padding-bottom: 80px;
+  }
+  .page-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .page-header > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .tally-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+  .tally-num {
+    font-size: 22px;
+    min-width: 34px;
+  }
+}
