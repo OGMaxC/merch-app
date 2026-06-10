@@ -185,6 +185,7 @@ function renderShowDetail(show, allItems, container) {
       </div>
       <div style="display:flex;gap:8px">
         ${show.status==='upcoming' ? `<button class="btn btn-ghost btn-sm" onclick="showPrintSheet()">Skriv ut ark</button>` : ''}
+        ${show.status==='complete' ? `<button class="btn btn-danger btn-sm" onclick="confirmResetShowStock('${show.id}')">Återställ lager</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openPackRedigeraor('${show.id}')">Redigera pack</button>
         <button class="btn btn-ghost btn-sm" onclick="navigate('/shows')">Tillbaka</button>
       </div>
@@ -595,6 +596,63 @@ async function _doReconcile(id) {
     navigate('/shows');
   } catch(err) {
     showToast('Avslutning misslyckades: ' + err.message, 'error');
+  }
+}
+
+/* ── RESET SHOW STOCK ── */
+function confirmResetShowStock(id) {
+  openModal('Återställ lager — bekräfta',
+    `<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px">
+      Detta återställer lagret för alla artiklar i det här spelningspacket till värdena
+      innan spelningen stängdes — som om försäljningen aldrig skett.
+     </div>
+     <div style="font-size:13px;color:var(--text2);line-height:1.6">
+      Spelningens försäljningsdata och transaktioner raderas också.
+      Det går inte att ångra.
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-danger" onclick="closeModal();resetShowStock('${id}')">Återställ lager</button>`
+  );
+}
+
+async function resetShowStock(id) {
+  try {
+    const show = await fsGet('merch_shows', id);
+    if (!show) { showToast('Spelning hittades inte', 'error'); return; }
+
+    // Reverse all sales lines: add qty back to stock, subtract from sålda
+    for (const entry of (show.sales || [])) {
+      for (const line of (entry.lines || [])) {
+        const item = await fsGet('merch_items', line.itemId);
+        if (!item) continue;
+
+        const v = (line.color === '_')
+          ? (item.variants?.['_'] || {})
+          : ((item.variants?.[line.color] || {})?.[line.sz] || {});
+
+        v.sålda      = Math.max(0, (v.sålda || 0) - (line.qty || 0));
+        item.totalStock = (item.totalStock || 0) + (line.qty || 0);
+        await fsSet('merch_items', line.itemId, item);
+      }
+    }
+
+    // Clear sales from the show and reset status to upcoming
+    await fsSet('merch_shows', id, { ...show, status: 'upcoming', sales: [], draftTally: null });
+
+    // Delete all sale transactions tied to this show
+    const existingTxns = await fsQuery('merch_transactions', [
+      { field: 'type',   value: 'sale' },
+      { field: 'showId', value: id },
+    ]);
+    await Promise.all(existingTxns.map(t => fsDelete('merch_transactions', t.id)));
+
+    // Clear any localStorage draft
+    localStorage.removeItem(`tally-${id}`);
+
+    showToast('Lager återställt');
+    navigate('/shows');
+  } catch(err) {
+    showToast('Återställning misslyckades: ' + err.message, 'error');
   }
 }
 
