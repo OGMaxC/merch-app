@@ -139,6 +139,7 @@ async function openShowDetail(id) {
 
   const container = document.getElementById('page-content');
   renderShowDetail(show, allItems, container);
+  restoreTallyUI();
 }
 
 function renderShowDetail(show, allItems, container) {
@@ -282,6 +283,67 @@ function tallyBlock(item, show) {
       ${sizeRows}
     </div>
   </div>`;
+}
+
+/* ── RESTORE TALLY UI AFTER RE-RENDER ── */
+function restoreTallyUI() {
+  const sales = window._tallySales || {};
+  if (!Object.keys(sales).length) return;
+
+  for (const [key, s] of Object.entries(sales)) {
+    if (s.qty === 0) continue;
+
+    const item = window._currentItems?.find(i => i.id === s.itemId);
+    if (!item) continue;
+
+    // Determine max for this variant (same logic as tallyAdj)
+    const v = (s.color === '_')
+      ? (item.variants?.['_'] || { stock: 0 })
+      : ((item.variants?.[s.color] || {})?.[s.sz] || { stock: 0 });
+    const packEntry = (window._currentShow?.pack || []).find(p => p.itemId === s.itemId);
+    const packMax = packEntry?.qty ?? (v.stock || 0);
+    const max = Math.min(v.stock || 0, packMax);
+    const rem = max - s.qty;
+
+    // Update sold counter
+    const såldaEl = document.getElementById(`sålda-${s.itemId}-${s.color}-${s.sz}`);
+    if (såldaEl) såldaEl.textContent = s.qty;
+
+    // Update remaining counter
+    const remEl = document.getElementById(`rem-${s.itemId}-${s.color}-${s.sz}`);
+    if (remEl) { remEl.textContent = rem; remEl.className = stockClass(rem); }
+
+    // Fade out if exhausted
+    const rowEl = document.getElementById(`sr-${s.itemId}-${s.color}-${s.sz}`);
+    if (rowEl) rowEl.style.opacity = rem === 0 ? '0.4' : '1';
+  }
+
+  // Restore item-level sold labels and totals
+  const itemTotals = {};
+  for (const s of Object.values(sales)) {
+    if (!itemTotals[s.itemId]) itemTotals[s.itemId] = { qty: 0, earned: 0 };
+    itemTotals[s.itemId].qty    += s.qty;
+    itemTotals[s.itemId].earned += s.qty * s.price;
+  }
+  for (const [itemId, totals] of Object.entries(itemTotals)) {
+    const label = document.getElementById(`item-sålda-label-${itemId}`);
+    if (label) {
+      label.textContent = totals.qty > 0
+        ? `${totals.qty} sålda · ${fmt(totals.earned)}`
+        : 'ingen försäljning ännu';
+      label.style.color = totals.qty > 0 ? 'var(--gold)' : 'var(--text3)';
+    }
+  }
+
+  // Restore grand totals
+  const totalQty    = Object.values(sales).reduce((s, x) => s + x.qty, 0);
+  const totalKassa  = Object.values(sales).reduce((s, x) => s + x.qty * x.price, 0);
+  const shSålda = document.getElementById('sh-sålda');
+  const shKassa = document.getElementById('sh-cash');
+  const cashBig = document.getElementById('tally-cash-big');
+  if (shSålda) shSålda.textContent  = totalQty;
+  if (shKassa) shKassa.textContent  = fmt(totalKassa);
+  if (cashBig) cashBig.textContent  = fmt(totalKassa);
 }
 
 function toggleTallyBlock(id) {
