@@ -4,43 +4,43 @@ registerPage('dashboard', async (container) => {
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <div class="page-title">Dashboard</div>
-        <div class="page-sub">Overview — ${new Date().toLocaleDateString('sv-SE', {weekday:'long', day:'numeric', month:'long'})}</div>
+        <div class="page-title">Översikt</div>
+        <div class="page-sub">Översikt — ${new Datum().toLocaleDatumString('sv-SE', {weekday:'long', day:'numeric', month:'long'})}</div>
       </div>
     </div>
     <div class="stat-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:10px">
-      <div class="stat-card"><div class="stat-label">Total items</div><div class="stat-value" id="d-items">—</div></div>
-      <div class="stat-card"><div class="stat-label">Units in stock</div><div class="stat-value" id="d-units">—</div></div>
+      <div class="stat-card"><div class="stat-label">Antal artiklar</div><div class="stat-value" id="d-items">—</div></div>
+      <div class="stat-card"><div class="stat-label">Enheter i lager</div><div class="stat-value" id="d-enheter">—</div></div>
     </div>
-    <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Stock valuation</div>
+    <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Lagervärdering</div>
     <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
-      <div class="stat-card"><div class="stat-label">Cost in stock</div><div class="stat-value" id="d-cost">—</div></div>
-      <div class="stat-card"><div class="stat-label">Sale value</div><div class="stat-value gold" id="d-value">—</div></div>
-      <div class="stat-card"><div class="stat-label">Potential margin</div><div class="stat-value green" id="d-margin">—</div></div>
+      <div class="stat-card"><div class="stat-label">Inköpskostnad</div><div class="stat-value" id="d-cost">—</div></div>
+      <div class="stat-card"><div class="stat-label">Försäljningsvärde</div><div class="stat-value gold" id="d-value">—</div></div>
+      <div class="stat-card"><div class="stat-label">Potentiell vinst</div><div class="stat-value green" id="d-margin">—</div></div>
     </div>
     <div class="stat-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:24px">
-      <div class="stat-card"><div class="stat-label">Low stock alerts</div><div class="stat-value amber" id="d-low">—</div></div>
+      <div class="stat-card"><div class="stat-label">Lågt lagersaldo</div><div class="stat-value amber" id="d-low">—</div></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div class="section">
         <div class="section-header">
-          <div class="section-title">Next show</div>
-          <a href="/shows" class="btn btn-ghost btn-sm" onclick="navigate('/shows');return false">All shows</a>
+          <div class="section-title">Nästa spelning</div>
+          <a href="/shows" class="btn btn-ghost btn-sm" onclick="navigate('/shows');return false">Alla spelningar</a>
         </div>
         <div id="dash-next-show"></div>
       </div>
       <div class="section">
         <div class="section-header">
-          <div class="section-title">Investment status</div>
-          <a href="/investment" class="btn btn-ghost btn-sm" onclick="navigate('/investment');return false">Details</a>
+          <div class="section-title">Investeringsstatus</div>
+          <a href="/investment" class="btn btn-ghost btn-sm" onclick="navigate('/investment');return false">Detaljer</a>
         </div>
         <div id="dash-invest"></div>
       </div>
     </div>
     <div class="section">
       <div class="section-header">
-        <div class="section-title">Low stock alerts</div>
-        <a href="/inventory" class="btn btn-ghost btn-sm" onclick="navigate('/inventory');return false">All items</a>
+        <div class="section-title">Lågt lagersaldo</div>
+        <a href="/inventory" class="btn btn-ghost btn-sm" onclick="navigate('/inventory');return false">Alla artiklar</a>
       </div>
       <div id="dash-low-stock"></div>
     </div>
@@ -60,28 +60,28 @@ registerPage('dashboard', async (container) => {
     const totalMargin = totalValue - totalCost;
     const lowItems   = items.filter(i => (i.totalStock || 0) > 0 && (i.totalStock || 0) <= 5);
     document.getElementById('d-items').textContent  = fmtNum(items.length);
-    document.getElementById('d-units').textContent  = fmtNum(totalUnits);
+    document.getElementById('d-enheter').textContent  = fmtNum(totalUnits);
     document.getElementById('d-cost').textContent   = fmt(totalCost);
     document.getElementById('d-value').textContent  = fmt(totalValue);
     document.getElementById('d-margin').textContent = fmt(totalMargin);
     document.getElementById('d-low').textContent    = fmtNum(lowItems.length);
 
     /* next show */
-    const upcoming = shows
-      .filter(s => s.status === 'upcoming')
+    const kommande = shows
+      .filter(s => s.status === 'kommande')
       .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-    const nextShow = upcoming[0];
+    const nextShow = kommande[0];
     document.getElementById('dash-next-show').innerHTML = nextShow
       ? `<div class="card">
           <div class="card-body">
             <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px">${nextShow.name}</div>
-            <div style="font-size:12px;color:var(--text2)">${fmtDate(nextShow.date)} · ${nextShow.venue || ''}</div>
+            <div style="font-size:12px;color:var(--text2)">${fmtDatum(nextShow.date)} · ${nextShow.venue || ''}</div>
             <div style="margin-top:12px;display:flex;gap:8px">
-              <a href="/shows" class="btn btn-primary btn-sm" onclick="navigate('/shows');return false">Open show pack</a>
+              <a href="/shows" class="btn btn-primary btn-sm" onclick="navigate('/shows');return false">Öppna spelningspack</a>
             </div>
           </div>
         </div>`
-      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">No upcoming shows. <a href="/shows" onclick="navigate('/shows');return false" style="color:var(--gold)">Add one</a></div></div>`;
+      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">Inga kommande spelningar. <a href="/shows" onclick="navigate('/shows');return false" style="color:var(--gold)">Lägg till</a></div></div>`;
 
     /* investment summary */
     const invested  = transactions.filter(t => t.type === 'production').reduce((s, t) => s + (t.amount || 0), 0);
@@ -90,18 +90,18 @@ registerPage('dashboard', async (container) => {
     document.getElementById('dash-invest').innerHTML = invested > 0
       ? `<div class="card"><div class="card-body">
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
-            <span style="color:var(--text2)">Recouped</span>
+            <span style="color:var(--text2)">Återvunnet</span>
             <span style="color:var(--gold)">${fmt(recouped)} / ${fmt(invested)}</span>
           </div>
           <div class="progress-bar"><div class="progress-fill${pct>=100?' full':''}" style="width:${pct}%"></div></div>
-          <div style="font-size:11px;color:var(--text3);margin-top:6px">${pct}% of production costs recovered</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px">${pct}% av produktionskostnader återvunna</div>
         </div></div>`
-      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">No investment records yet. <a href="/investment" onclick="navigate('/investment');return false" style="color:var(--gold)">Log one</a></div></div>`;
+      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">Inga investeringar registrerade. <a href="/investment" onclick="navigate('/investment');return false" style="color:var(--gold)">Logga en</a></div></div>`;
 
     /* low stock */
     document.getElementById('dash-low-stock').innerHTML = lowItems.length
       ? `<div class="card"><div class="table-wrap"><table>
-          <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Sale price</th></tr></thead>
+          <thead><tr><th>Item</th><th>Kategori</th><th>Stock</th><th>Sale price</th></tr></thead>
           <tbody>${lowItems.map(i => `<tr>
             <td style="font-weight:500">${i.name}</td>
             <td>${catBadge(i.category)}</td>
@@ -109,10 +109,10 @@ registerPage('dashboard', async (container) => {
             <td style="color:var(--gold)">${fmt(i.salePrice||0)}</td>
           </tr>`).join('')}</tbody>
         </table></div></div>`
-      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">All items well stocked.</div></div>`;
+      : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">Alla artiklar well stocked.</div></div>`;
 
   } catch (err) {
-    console.error('Dashboard error:', err);
+    console.error('Översikt error:', err);
     document.getElementById('d-items').textContent = 'error';
   }
 });
