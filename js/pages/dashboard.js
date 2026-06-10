@@ -5,7 +5,7 @@ registerPage('dashboard', async (container) => {
     <div class="page-header">
       <div>
         <div class="page-title">Översikt</div>
-        <div class="page-sub">Översikt — ${new Datum().toLocaleDatumString('sv-SE', {weekday:'long', day:'numeric', month:'long'})}</div>
+        <div class="page-sub">Översikt — ${new Date().toLocaleDateString('sv-SE', {weekday:'long', day:'numeric', month:'long'})}</div>
       </div>
     </div>
     <div class="stat-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:10px">
@@ -75,7 +75,7 @@ registerPage('dashboard', async (container) => {
       ? `<div class="card">
           <div class="card-body">
             <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px">${nextShow.name}</div>
-            <div style="font-size:12px;color:var(--text2)">${fmtDatum(nextShow.date)} · ${nextShow.venue || ''}</div>
+            <div style="font-size:12px;color:var(--text2)">${fmtDate(nextShow.date)} · ${nextShow.venue || ''}</div>
             <div style="margin-top:12px;display:flex;gap:8px">
               <a href="/shows" class="btn btn-primary btn-sm" onclick="navigate('/shows');return false">Öppna spelningspack</a>
             </div>
