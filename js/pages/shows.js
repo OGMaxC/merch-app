@@ -408,51 +408,61 @@ async function savePack(showId) {
 
 /* ── PRINT SHEET ── */
 function buildPrintSheet(show, packedItems) {
+  const box = '<div style="width:16px;height:16px;border:1px solid #999;border-radius:1px;display:inline-block;margin:2px;vertical-align:middle"></div>';
+
   const rows = packedItems.map(item => {
     const isClothing = item.category === 'clothing';
+    const tdStyle = 'border:1px solid #ccc;padding:8px;vertical-align:top;';
+    const thStyle = 'border:1px solid #ccc;padding:6px 8px;background:#f0f0f0;font-size:11px;font-weight:700;';
+
     if (isClothing) {
       const colors = item.colors || [];
       return colors.map(color => {
         const varStocks = item.variants?.[color] || {};
         const activeSizes = ALL_SIZES.filter(sz => (varStocks[sz]?.stock||0) > 0);
-        const cells = activeSizes.map(sz => {
+        const sizeHTML = activeSizes.map(sz => {
           const n = varStocks[sz]?.stock || 0;
-          const boxes = Array(Math.min(n, 12)).fill('<div style="width:14px;height:14px;border:1px solid #999;border-radius:1px;display:inline-block;margin:2px"></div>').join('');
-          return `<td style="border:1px solid #ccc;padding:6px;vertical-align:top;min-width:60px">
-            <div style="font-weight:700;font-size:11px;margin-bottom:3px">${sz} (${n})</div>
-            <div>${boxes}</div>
-          </td>`;
+          return `<div style="display:inline-block;margin-right:10px;margin-bottom:4px;vertical-align:top">
+            <div style="font-weight:700;font-size:11px;margin-bottom:3px">${sz} <span style="font-weight:400;color:#666">(${n})</span></div>
+            <div>${Array(Math.min(n,12)).fill(box).join('')}</div>
+          </div>`;
         }).join('');
         return `<tr>
-          <td style="border:1px solid #ccc;padding:6px;font-size:12px;font-weight:600">${item.name}<br><span style="font-size:10px;color:#666;font-weight:400">${color}</span></td>
-          <td style="border:1px solid #ccc;padding:6px;font-size:12px;text-align:center">${item.salePrice} kr</td>
-          ${cells}
-          <td style="border:1px solid #ccc;padding:6px;min-width:60px">&nbsp;</td>
+          <td style="${tdStyle}font-size:12px;font-weight:600;min-width:140px">${item.name}<br><span style="font-size:10px;color:#666;font-weight:400">${color}</span></td>
+          <td style="${tdStyle}font-size:12px;text-align:center;white-space:nowrap;min-width:56px">${item.salePrice} kr</td>
+          <td style="${tdStyle}">${sizeHTML}</td>
+          <td style="${tdStyle}min-width:70px">&nbsp;</td>
         </tr>`;
       }).join('');
     } else {
       const n = item.variants?.['_']?.stock || 0;
-      const boxes = Array(Math.min(n, 15)).fill('<div style="width:14px;height:14px;border:1px solid #999;border-radius:1px;display:inline-block;margin:2px"></div>').join('');
       return `<tr>
-        <td style="border:1px solid #ccc;padding:6px;font-size:12px;font-weight:600">${item.name}</td>
-        <td style="border:1px solid #ccc;padding:6px;font-size:12px;text-align:center">${item.salePrice} kr</td>
-        <td colspan="6" style="border:1px solid #ccc;padding:6px">${boxes}</td>
-        <td style="border:1px solid #ccc;padding:6px">&nbsp;</td>
+        <td style="${tdStyle}font-size:12px;font-weight:600;min-width:140px">${item.name}</td>
+        <td style="${tdStyle}font-size:12px;text-align:center;white-space:nowrap;min-width:56px">${item.salePrice} kr</td>
+        <td style="${tdStyle}">${Array(Math.min(n,20)).fill(box).join('')}</td>
+        <td style="${tdStyle}min-width:70px">&nbsp;</td>
       </tr>`;
     }
   }).join('');
 
+  const thStyle = 'border:1px solid #ccc;padding:7px 8px;background:#f0f0f0;font-size:11px;font-weight:700;';
   return `<div style="font-family:Georgia,serif;color:#111;padding:20px">
     <div style="text-align:center;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px">
       <div style="font-size:18px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase">Doomherre — merch sheet</div>
       <div style="font-size:11px;color:#555;margin-top:3px">${show.name} &nbsp;·&nbsp; ${fmtDate(show.date)} &nbsp;·&nbsp; ${show.venue||''}</div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
+      <colgroup>
+        <col style="width:160px"/>
+        <col style="width:60px"/>
+        <col/>
+        <col style="width:70px"/>
+      </colgroup>
       <thead><tr>
-        <th style="border:1px solid #ccc;padding:6px;background:#f0f0f0;text-align:left">Item</th>
-        <th style="border:1px solid #ccc;padding:6px;background:#f0f0f0;text-align:center">Price</th>
-        <th colspan="5" style="border:1px solid #ccc;padding:6px;background:#f0f0f0;text-align:center">Sizes / tally boxes</th>
-        <th style="border:1px solid #ccc;padding:6px;background:#f0f0f0;text-align:center">Cash</th>
+        <th style="${thStyle}text-align:left">Item</th>
+        <th style="${thStyle}text-align:center">Price</th>
+        <th style="${thStyle}text-align:left">Sizes / tally boxes</th>
+        <th style="${thStyle}text-align:center">Cash</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
