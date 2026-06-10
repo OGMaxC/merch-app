@@ -191,7 +191,7 @@ async function advanceDesign(id, currentSteg) {
 
 async function deleteDesign(id, name) {
   confirmAction(`Ta bort design "${name}"?`, async () => {
-    await fsTa bort('merch_designs', id);
+    await fsDelete('merch_designs', id);
     showToast('Design borttagen');
     await renderDesigns();
   });
