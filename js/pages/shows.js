@@ -136,9 +136,26 @@ async function openShowDetail(id) {
   window._currentShow = show;
   window._currentItems = allItems;
 
-  // Restore tally from localStorage if available
+  // Restore tally from localStorage if available (in-progress show)
   const saved = localStorage.getItem(`tally-${id}`);
-  window._tallySales = saved ? JSON.parse(saved) : {};
+  if (saved) {
+    window._tallySales = JSON.parse(saved);
+  } else {
+    // For completed shows (or shows with no localStorage draft),
+    // seed tallySales from the reconciled sales lines so remaining
+    // quantities reflect actual sold units, not original pack quantities.
+    const seededSales = {};
+    for (const saleEntry of (show.sales || [])) {
+      for (const line of (saleEntry.lines || [])) {
+        const key = `${line.itemId}-${line.color}-${line.sz}`;
+        if (!seededSales[key]) {
+          seededSales[key] = { itemId: line.itemId, color: line.color, sz: line.sz, qty: 0, price: line.price || 0 };
+        }
+        seededSales[key].qty += line.qty || 0;
+      }
+    }
+    window._tallySales = seededSales;
+  }
 
   const container = document.getElementById('page-content');
   renderShowDetail(show, allItems, container);
