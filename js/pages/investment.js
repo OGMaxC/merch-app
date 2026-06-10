@@ -106,11 +106,11 @@ async function renderInvestering() {
         <div class="card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Datum</th><th>Person</th><th>Artikel / Spelning</th><th>Typ</th><th style="text-align:right">Amount</th><th></th></tr></thead>
+              <thead><tr><th>Datum</th><th>Person</th><th>Artikel / Spelning</th><th>Typ</th><th style="text-align:right">Belopp</th><th></th></tr></thead>
               <tbody>
                 ${transactions.length
                   ? [...transactions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t => `<tr>
-                    <td style="color:var(--text2)">${fmtShortDatum(t.date)}</td>
+                    <td style="color:var(--text2)">${fmtShortDate(t.date)}</td>
                     <td>${t.person||'All'}</td>
                     <td style="color:var(--text2)">${t.itemNamn||t.showNamn||t.notes||'—'}</td>
                     <td><span class="badge ${t.typee==='production'?'badge-artwork':'badge-done'}">${t.typee}</span></td>
@@ -147,7 +147,7 @@ function openLogPayment() {
     </div>
     <div class="field-row">
       <div class="field"><label>Belopp (kr)</label><input id="tp-amount" type="number" placeholder="0"/></div>
-      <div class="field"><label>Datum</label><input id="tp-date" type="date" value="${new Datum().toISOString().split('T')[0]}"/></div>
+      <div class="field"><label>Datum</label><input id="tp-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div>
     </div>
     <div class="field"><label>Artikel / anteckning</label><input id="tp-note" type="text" placeholder="t.ex. Plaguelords skjorta, tryckkostnader"/></div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
