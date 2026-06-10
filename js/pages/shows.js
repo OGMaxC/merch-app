@@ -49,7 +49,7 @@ function showRow(s) {
   return `<div class="card-row clickable" onclick="openShowDetail('${s.id}')">
     <div>
       <div style="font-weight:500">${s.name}</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:2px">${fmtDatum(s.date)} · ${s.venue||''} · ${s.city||''}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${fmtDate(s.date)} · ${s.venue||''} · ${s.city||''}</div>
     </div>
     <div style="display:flex;align-items:center;gap:16px">
       ${earned > 0 ? `<span style="color:var(--gold);font-size:13px">${fmt(earned)}</span>` : ''}
@@ -143,7 +143,7 @@ async function openShowDetail(id) {
 
 function renderShowDetail(show, allArtikels, container) {
   const pack = show.pack || [];
-  const packedArtikels = pack.map(p => {
+  const packedItems = pack.map(p => {
     const item = allArtikels.find(i => i.id === p.itemId);
     return item ? { ...item, packQty: p.qty, packVariants: p.variants || {} } : null;
   }).filter(Boolean);
@@ -160,7 +160,7 @@ function renderShowDetail(show, allArtikels, container) {
           &nbsp;/&nbsp; ${show.name}
         </div>
         <div class="page-title">${show.name}</div>
-        <div class="page-sub">${fmtDatum(show.date)} · ${show.venue||''} · ${show.city||''}</div>
+        <div class="page-sub">${fmtDate(show.date)} · ${show.venue||''} · ${show.city||''}</div>
       </div>
       <div style="display:flex;gap:8px">
         ${show.status==='kommande' ? `<button class="btn btn-ghost btn-sm" onclick="showSkriv utSheet()">Skriv ut ark</button>` : ''}
@@ -170,17 +170,17 @@ function renderShowDetail(show, allArtikels, container) {
     </div>
 
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">Packade artiklar</div><div class="stat-value" id="sh-items">${packedArtikels.length}</div></div>
-      <div class="stat-card"><div class="stat-label">Enheter totalt</div><div class="stat-value" id="sh-enheter">${packedArtikels.reduce((s,i)=>s+(i.packQty||0),0)}</div></div>
+      <div class="stat-card"><div class="stat-label">Packade artiklar</div><div class="stat-value" id="sh-items">${packedItems.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Enheter totalt</div><div class="stat-value" id="sh-enheter">${packedItems.reduce((s,i)=>s+(i.packQty||0),0)}</div></div>
       <div class="stat-card"><div class="stat-label">Sålda</div><div class="stat-value green" id="sh-sålda">${sales.reduce((s,x)=>s+(x.qty||0),0)}</div></div>
       <div class="stat-card"><div class="stat-label">Intäkter</div><div class="stat-value gold" id="sh-cash">${fmt(earnedTotal)}</div></div>
     </div>
 
-    ${!packedArtikels.length ? `
+    ${!packedItems.length ? `
       <div class="card"><div class="card-body">
         ${emptyState('🎒', 'Inga artiklar packade för denna spelning.', `<button class="btn btn-primary" onclick="openPackRedigeraor('${show.id}')" style="margin-top:12px">Bygg pack</button>`)}
       </div></div>` : `
-      <div id="tally-blocks">${packedArtikels.map(item => tallyBlock(item, show)).join('')}</div>
+      <div id="tally-blocks">${packedItems.map(item => tallyBlock(item, show)).join('')}</div>
       <div class="card" style="margin-top:16px">
         <div class="card-body" style="display:flex;align-items:center;justify-content:space-between">
           <div>
@@ -189,7 +189,7 @@ function renderShowDetail(show, allArtikels, container) {
           </div>
           <div style="text-align:right">
             <div class="stat-label">Potential if sålda out</div>
-            <div style="font-size:14px;color:var(--text2);margin-top:3px">${fmt(packedArtikels.reduce((s,i)=>s+(i.packQty||0)*(i.salePris||0),0))}</div>
+            <div style="font-size:14px;color:var(--text2);margin-top:3px">${fmt(packedItems.reduce((s,i)=>s+(i.packQty||0)*(i.salePris||0),0))}</div>
           </div>
         </div>
       </div>
@@ -213,10 +213,10 @@ function renderShowDetail(show, allArtikels, container) {
 }
 
 function tallyBlock(item, show) {
-  const isKläder = item.category === 'clothing';
+  const isClothing = item.category === 'clothing';
   const colors     = item.colors || [];
 
-  const sizeRows = isKläder
+  const sizeRows = isClothing
     ? colors.map(color => {
         const varStocks = item.variants?.[color] || {};
         return ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0).map(sz => {
@@ -347,7 +347,7 @@ function tallyLocalSave() {
   localStorage.setArtikel(key, JSON.stringify(window._tallySales));
   const el = document.getElementById('tally-save-indicator');
   if (el) {
-    el.textContent = 'Saved ' + new Datum().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    el.textContent = 'Saved ' + new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     el.style.color = 'var(--green)';
   }
 }
@@ -455,15 +455,15 @@ async function savePack(showId) {
 }
 
 /* ── PRINT SHEET ── */
-function buildSkriv utSheet(show, packedArtikels) {
+function buildPrintSheet(show, packedItems) {
   const box = '<div style="width:16px;height:16px;border:1px solid #999;border-radius:1px;display:inline-block;margin:2px;vertical-align:middle"></div>';
 
-  const rows = packedArtikels.map(item => {
-    const isKläder = item.category === 'clothing';
+  const rows = packedItems.map(item => {
+    const isClothing = item.category === 'clothing';
     const tdStyle = 'border:1px solid #ccc;padding:8px;vertical-align:top;';
     const thStyle = 'border:1px solid #ccc;padding:6px 8px;background:#f0f0f0;font-size:11px;font-weight:700;';
 
-    if (isKläder) {
+    if (isClothing) {
       const colors = item.colors || [];
       return colors.map(color => {
         const varStocks = item.variants?.[color] || {};
@@ -497,7 +497,7 @@ function buildSkriv utSheet(show, packedArtikels) {
   return `<div style="font-family:Georgia,serif;color:#111;padding:20px">
     <div style="text-align:center;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px">
       <div style="font-size:18px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase">Doomherre — merch-ark</div>
-      <div style="font-size:11px;color:#555;margin-top:3px">${show.name} &nbsp;·&nbsp; ${fmtDatum(show.date)} &nbsp;·&nbsp; ${show.venue||''}</div>
+      <div style="font-size:11px;color:#555;margin-top:3px">${show.name} &nbsp;·&nbsp; ${fmtDate(show.date)} &nbsp;·&nbsp; ${show.venue||''}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
       <colgroup>
@@ -529,12 +529,12 @@ function showSkriv utSheet() {
   if (!show || !allArtikels) return;
 
   const pack = show.pack || [];
-  const packedArtikels = pack.map(p => {
+  const packedItems = pack.map(p => {
     const item = allArtikels.find(i => i.id === p.itemId);
     return item ? { ...item, packQty: p.qty } : null;
   }).filter(Boolean);
 
-  const sheetHTML = buildSkriv utSheet(show, packedArtikels);
+  const sheetHTML = buildPrintSheet(show, packedItems);
 
   const win = window.open('', '_blank');
   win.document.write(`<!DOCTYPE html>
