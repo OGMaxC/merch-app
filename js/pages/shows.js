@@ -201,9 +201,6 @@ function renderShowDetail(show, allItems, container) {
       </div>
     `}
 
-    <div id="print-sheet-wrap" style="display:none">
-      ${buildPrintSheet(show, packedItems)}
-    </div>
   `;
 }
 
@@ -469,9 +466,37 @@ function buildPrintSheet(show, packedItems) {
 }
 
 function showPrintSheet() {
-  const el = document.getElementById('print-sheet-wrap');
-  if (!el) return;
-  el.style.display = 'block';
-  el.scrollIntoView({ behavior: 'smooth' });
-  setTimeout(() => window.print(), 300);
+  const show = window._currentShow;
+  const allItems = window._currentItems;
+  if (!show || !allItems) return;
+
+  const pack = show.pack || [];
+  const packedItems = pack.map(p => {
+    const item = allItems.find(i => i.id === p.itemId);
+    return item ? { ...item, packQty: p.qty } : null;
+  }).filter(Boolean);
+
+  const sheetHTML = buildPrintSheet(show, packedItems);
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Merch sheet — ${show.name}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, serif; color: #111; background: #fff; padding: 24px; }
+    @media print { body { padding: 0; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom:20px">
+    <button onclick="window.print()" style="padding:8px 20px;font-size:14px;cursor:pointer;background:#111;color:#fff;border:none;border-radius:4px">Print</button>
+    <button onclick="window.close()" style="padding:8px 20px;font-size:14px;cursor:pointer;margin-left:8px;background:none;border:1px solid #ccc;border-radius:4px">Close</button>
+  </div>
+  ${sheetHTML}
+</body>
+</html>`);
+  win.document.close();
 }
