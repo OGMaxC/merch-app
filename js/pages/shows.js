@@ -25,8 +25,8 @@ async function renderSpelningar() {
       return;
     }
 
-    const kommande = shows.filter(s => s.status === 'kommande');
-    const done     = shows.filter(s => s.status !== 'kommande');
+    const kommande = shows.filter(s => s.status === 'upcoming');
+    const done     = shows.filter(s => s.status !== 'upcoming');
 
     let html = '';
     if (kommande.length) {
@@ -82,8 +82,8 @@ function buildShowForm(s) {
       <div class="field"><label>Datum</label><input id="sf-date" type="date" value="${s?.date||''}"/></div>
       <div class="field"><label>Status</label>
         <select id="sf-status">
-          <option value="kommande" ${(s?.status||'kommande')==='kommande'?'selected':''}>Kommande</option>
-          <option value="avslutad" ${s?.status==='avslutad'?'selected':''}>Complete</option>
+          <option value="upcoming" ${(s?.status||'kommande')==='kommande'?'selected':''}>Kommande</option>
+          <option value="complete" ${s?.status==='avslutad'?'selected':''}>Complete</option>
         </select>
       </div>
     </div>
@@ -385,9 +385,9 @@ async function reconcileShow(id) {
       lines: sales.map(s => ({ itemId: s.itemId, color: s.color, sz: s.sz, qty: s.qty, price: s.price }))
     }];
 
-    await fsSet('merch_shows', id, { ...show, status: 'avslutad', sales: updatedSales, notes });
+    await fsSet('merch_shows', id, { ...show, status: 'complete', sales: updatedSales, notes });
 
-    for (const s av sales) {
+    for (const s of sales) {
       const item = window._currentArtikels?.find(i => i.id === s.itemId);
       if (!item) continue;
       const v = (item.variants?.[s.color] || {})?.[s.sz] || {};
