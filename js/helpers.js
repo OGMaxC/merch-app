@@ -79,8 +79,9 @@ function emptyState(icon, msg, action = '') {
 
 /* ── CONFIRM ── */
 function confirmAction(msg, onConfirm) {
+  window._confirmCallback = onConfirm;
   openModal('Confirm', `<p style="color:var(--text2);font-size:13px">${msg}</p>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-     <button class="btn btn-danger" onclick="closeModal();(${onConfirm.toString()})()">Confirm</button>`
+     <button class="btn btn-danger" onclick="closeModal();window._confirmCallback()">Confirm</button>`
   );
 }
