@@ -125,32 +125,32 @@ async function saveShow(id) {
 
 /* ── SHOW DETAIL / TALLY ── */
 async function openShowDetail(id) {
-  const [show, allArtikels] = await Promise.all([
+  const [show, allItems] = await Promise.all([
     fsGet('merch_shows', id),
     fsGetAll('merch_items'),
   ]);
 
   window._currentShow = show;
-  window._currentArtikels = allArtikels;
+  window._currentItems = allItems;
 
   // Restore tally from localStorage if available
   const saved = localStorage.getArtikel(`tally-${id}`);
   window._tallySales = saved ? JSON.parse(saved) : {};
 
   const container = document.getElementById('page-content');
-  renderShowDetail(show, allArtikels, container);
+  renderShowDetail(show, allItems, container);
 }
 
-function renderShowDetail(show, allArtikels, container) {
+function renderShowDetail(show, allItems, container) {
   const pack = show.pack || [];
   const packedItems = pack.map(p => {
-    const item = allArtikels.find(i => i.id === p.itemId);
+    const item = allItems.find(i => i.id === p.itemId);
     return item ? { ...item, packQty: p.qty, packVariants: p.variants || {} } : null;
   }).filter(Boolean);
 
   const sales    = show.sales || [];
   const earnedTotal = sales.reduce((s, x) => s + (x.amount || 0), 0);
-  const mode     = show.status === 'kommande' ? 'tally' : 'summary';
+  const mode     = show.status === 'upcoming' ? 'tally' : 'summary';
 
   container.innerHTML = `
     <div class="page-header">
@@ -163,7 +163,7 @@ function renderShowDetail(show, allArtikels, container) {
         <div class="page-sub">${fmtDate(show.date)} · ${show.venue||''} · ${show.city||''}</div>
       </div>
       <div style="display:flex;gap:8px">
-        ${show.status==='kommande' ? `<button class="btn btn-ghost btn-sm" onclick="showSkriv utSheet()">Skriv ut ark</button>` : ''}
+        ${show.status==='upcoming' ? `<button class="btn btn-ghost btn-sm" onclick="showPrintSheet()">Skriv ut ark</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openPackRedigeraor('${show.id}')">Redigera pack</button>
         <button class="btn btn-ghost btn-sm" onclick="navigate('/shows')">Tillbaka</button>
       </div>
@@ -296,7 +296,7 @@ function toggleTallyBlock(id) {
 
 function tallyAdj(itemId, color, sz, delta, price) {
   const key   = `${itemId}-${color}-${sz}`;
-  const item  = window._currentArtikels?.find(i => i.id === itemId);
+  const item  = window._currentItems?.find(i => i.id === itemId);
   if (!item) return;
 
   const v     = (item.variants?.[color] || {})?.[sz] || { stock: 0, sålda: 0 };
@@ -388,7 +388,7 @@ async function reconcileShow(id) {
     await fsSet('merch_shows', id, { ...show, status: 'complete', sales: updatedSales, notes });
 
     for (const s of sales) {
-      const item = window._currentArtikels?.find(i => i.id === s.itemId);
+      const item = window._currentItems?.find(i => i.id === s.itemId);
       if (!item) continue;
       const v = (item.variants?.[s.color] || {})?.[s.sz] || {};
       if (v) {
@@ -523,14 +523,14 @@ function buildPrintSheet(show, packedItems) {
   </div>`;
 }
 
-function showSkriv utSheet() {
+function showPrintSheet() {
   const show = window._currentShow;
-  const allArtikels = window._currentArtikels;
-  if (!show || !allArtikels) return;
+  const allItems = window._currentItems;
+  if (!show || !allItems) return;
 
   const pack = show.pack || [];
   const packedItems = pack.map(p => {
-    const item = allArtikels.find(i => i.id === p.itemId);
+    const item = allItems.find(i => i.id === p.itemId);
     return item ? { ...item, packQty: p.qty } : null;
   }).filter(Boolean);
 
