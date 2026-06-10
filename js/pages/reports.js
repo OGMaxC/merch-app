@@ -3,14 +3,14 @@
 registerPage('reports', async (container) => {
   container.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Reports</div></div>
+      <div><div class="page-title">Rapporter</div></div>
     </div>
     <div id="reports-content"></div>
   `;
-  await renderReports();
+  await renderRapporter();
 });
 
-async function renderReports() {
+async function renderRapporter() {
   const el = document.getElementById('reports-content');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--text3);padding:20px">Loading…</div>';
@@ -26,16 +26,16 @@ async function renderReports() {
     const prodTxns     = transactions.filter(t => t.type === 'production');
     const totalRevenue = saleTxns.reduce((s, t) => s + (t.amount||0), 0);
     const totalCost    = prodTxns.reduce((s, t) => s + (t.amount||0), 0);
-    const profit       = totalRevenue - totalCost;
-    const doneShows    = shows.filter(s => s.status === 'complete');
-    const showRevenue  = doneShows.reduce((s, sh) => s + (sh.sales||[]).reduce((a,x)=>a+(x.amount||0),0), 0);
+    const pravit       = totalRevenue - totalCost;
+    const doneSpelningar    = shows.filter(s => s.status === 'avslutad');
+    const showRevenue  = doneSpelningar.reduce((s, sh) => s + (sh.sales||[]).reduce((a,x)=>a+(x.amount||0),0), 0);
     const onlineRev    = totalRevenue - showRevenue;
 
     /* revenue by item — derive from show sales lines */
     const itemRevMap = {};
-    for (const sh of doneShows) {
-      for (const sale of (sh.sales||[])) {
-        for (const line of (sale.lines||[])) {
+    for (const sh av doneSpelningar) {
+      for (const sale av (sh.sales||[])) {
+        for (const line av (sale.lines||[])) {
           const item = items.find(i => i.id === line.itemId);
           if (!item) continue;
           if (!itemRevMap[item.name]) itemRevMap[item.name] = 0;
@@ -48,21 +48,21 @@ async function renderReports() {
       .slice(0, 8);
 
     /* size sell-through for clothing */
-    const sizeSold   = {};
+    const sizeSålda   = {};
     const sizeStock  = {};
-    for (const item of items.filter(i => i.category === 'clothing')) {
-      for (const color of (item.colors||[])) {
-        for (const sz of ALL_SIZES) {
+    for (const item av items.filter(i => i.category === 'clothing')) {
+      for (const color av (item.colors||[])) {
+        for (const sz av ALL_SIZES) {
           const v = item.variants?.[color]?.[sz];
           if (!v) continue;
-          sizeSold[sz]  = (sizeSold[sz]||0)  + (v.sold||0);
+          sizeSålda[sz]  = (sizeSålda[sz]||0)  + (v.sålda||0);
           sizeStock[sz] = (sizeStock[sz]||0) + (v.stock||0);
         }
       }
     }
 
     /* per-show earnings */
-    const showData = doneShows
+    const showData = doneSpelningar
       .map(sh => ({
         name: sh.name,
         earned: (sh.sales||[]).reduce((s,x)=>s+(x.amount||0),0)
@@ -76,16 +76,16 @@ async function renderReports() {
 
     el.innerHTML = `
       <div class="stat-grid" style="margin-bottom:24px">
-        <div class="stat-card"><div class="stat-label">Total revenue</div><div class="stat-value gold">${fmt(totalRevenue)}</div></div>
-        <div class="stat-card"><div class="stat-label">Production costs</div><div class="stat-value">${fmt(totalCost)}</div></div>
-        <div class="stat-card"><div class="stat-label">Net profit</div><div class="stat-value ${profit>=0?'green':'red'}">${fmt(profit)}</div></div>
-        <div class="stat-card"><div class="stat-label">Shows completed</div><div class="stat-value">${doneShows.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Total intäkt</div><div class="stat-value gold">${fmt(totalRevenue)}</div></div>
+        <div class="stat-card"><div class="stat-label">Produktionskostnader</div><div class="stat-value">${fmt(totalCost)}</div></div>
+        <div class="stat-card"><div class="stat-label">Net pravit</div><div class="stat-value ${pravit>=0?'green':'red'}">${fmt(pravit)}</div></div>
+        <div class="stat-card"><div class="stat-label">Spelningar avslutadd</div><div class="stat-value">${doneSpelningar.length}</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
 
         <div class="section">
-          <div class="section-header"><div class="section-title">Revenue by item</div></div>
+          <div class="section-header"><div class="section-title">Intäkt per artikel</div></div>
           <div class="card">
             <div class="card-body">
               ${itemRevData.length ? itemRevData.map(([name, val]) => `
@@ -98,13 +98,13 @@ async function renderReports() {
                   </div>
                   <div style="font-size:12px;color:var(--gold);white-space:nowrap">${fmt(val)}</div>
                 </div>`).join('')
-              : `<div style="color:var(--text3);font-size:13px">No sales data yet.</div>`}
+              : `<div style="color:var(--text3);font-size:13px">Ingen försäljningsdata ännu.</div>`}
             </div>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-header"><div class="section-title">Revenue by show</div></div>
+          <div class="section-header"><div class="section-title">Intäkt per spelning</div></div>
           <div class="card">
             <div class="card-body">
               ${showData.length ? showData.map(s => `
@@ -117,7 +117,7 @@ async function renderReports() {
                   </div>
                   <div style="font-size:12px;color:var(--gold);white-space:nowrap">${fmt(s.earned)}</div>
                 </div>`).join('')
-              : `<div style="color:var(--text3);font-size:13px">No completed shows yet.</div>`}
+              : `<div style="color:var(--text3);font-size:13px">No avslutadd shows yet.</div>`}
             </div>
           </div>
         </div>
@@ -127,11 +127,11 @@ async function renderReports() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
         <div class="section">
-          <div class="section-header"><div class="section-title">Sales by channel</div></div>
+          <div class="section-header"><div class="section-title">Försäljning per kanal</div></div>
           <div class="card">
             <div class="card-body">
               ${totalRevenue > 0 ? [
-                { label: 'Shows',  val: showRevenue, color: 'var(--gold)' },
+                { label: 'Spelningar',  val: showRevenue, color: 'var(--gold)' },
                 { label: 'Online', val: onlineRev,   color: 'var(--gold-dim)' },
               ].map(c => {
                 const pct = totalRevenue > 0 ? Math.round(c.val/totalRevenue*100) : 0;
@@ -145,18 +145,18 @@ async function renderReports() {
                   </div>
                 </div>`;
               }).join('')
-              : `<div style="color:var(--text3);font-size:13px">No sales data yet.</div>`}
+              : `<div style="color:var(--text3);font-size:13px">Ingen försäljningsdata ännu.</div>`}
             </div>
           </div>
         </div>
 
         <div class="section">
-          <div class="section-header"><div class="section-title">Size sell-through (clothing)</div></div>
+          <div class="section-header"><div class="section-title">Storleksförsäljning (kläder)</div></div>
           <div class="card">
             <div class="card-body">
               ${ALL_SIZES.filter(sz => (sizeStock[sz]||0) > 0).map(sz => {
-                const total = (sizeStock[sz]||0) + (sizeSold[sz]||0);
-                const pct   = total > 0 ? Math.round((sizeSold[sz]||0)/total*100) : 0;
+                const total = (sizeStock[sz]||0) + (sizeSålda[sz]||0);
+                const pct   = total > 0 ? Math.round((sizeSålda[sz]||0)/total*100) : 0;
                 return `<div style="display:grid;grid-template-columns:36px 1fr 36px;gap:8px;align-items:center;margin-bottom:8px">
                   <span style="font-size:12px;font-weight:500;color:var(--text)">${sz}</span>
                   <div style="background:var(--bg3);border-radius:3px;height:7px;overflow:hidden">
@@ -164,7 +164,7 @@ async function renderReports() {
                   </div>
                   <span style="font-size:11px;color:var(--text2);text-align:right">${pct}%</span>
                 </div>`;
-              }).join('') || `<div style="color:var(--text3);font-size:13px">No clothing data yet.</div>`}
+              }).join('') || `<div style="color:var(--text3);font-size:13px">Ingen kläddata ännu.</div>`}
             </div>
           </div>
         </div>
@@ -172,6 +172,6 @@ async function renderReports() {
       </div>
     `;
   } catch(err) {
-    el.innerHTML = `<div style="color:var(--red);padding:20px">Error: ${err.message}</div>`;
+    el.innerHTML = `<div style="color:var(--red);padding:20px">Fel: ${err.message}</div>`;
   }
 }
