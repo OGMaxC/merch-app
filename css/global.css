@@ -496,6 +496,34 @@ tr:hover td { background: var(--bg3); }
 .pipeline-item-name { font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 4px; }
 .pipeline-item-meta { font-size: 0.7rem; color: var(--text2); }
 
+/* ── MOBILE NAV BAR ──────────────────────────────────────────── */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 50;
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+}
+.mobile-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  font-size: 0.65rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: color 0.15s;
+}
+.mobile-nav a.active { color: var(--gold); }
+.mobile-nav a svg { width: 24px; height: 24px; }
+
 /* ── MOBILE ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app-shell {
@@ -525,34 +553,6 @@ tr:hover td { background: var(--bg3); }
     display: flex;
   }
 }
-
-/* ── MOBILE NAV BAR (show pages) ─────────────────────────────── */
-.mobile-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  z-index: 50;
-  padding: 8px 0 env(safe-area-inset-bottom, 8px);
-}
-.mobile-nav a {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 6px 4px;
-  font-size: 0.6rem;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  transition: color 0.15s;
-}
-.mobile-nav a.active { color: var(--gold); }
-.mobile-nav a svg { width: 22px; height: 22px; }
 
 /* ── MOBILE SHOW TALLY ───────────────────────────────────────── */
 @media (max-width: 768px) {
