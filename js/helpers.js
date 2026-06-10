@@ -26,13 +26,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 /* ── FORMATTING ── */
 function fmt(n) { return Math.round(n).toLocaleString('sv-SE') + ' kr'; }
 function fmtNum(n) { return Math.round(n).toLocaleString('sv-SE'); }
-function fmtDatum(iso) {
+function fmtDate(iso) {
   if (!iso) return '—';
-  return new Datum(iso).toLocaleDatumString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' });
 }
-function fmtShortDatum(iso) {
+function fmtShortDate(iso) {
   if (!iso) return '—';
-  return new Datum(iso).toLocaleDatumString('sv-SE', { day: 'numeric', month: 'short' });
+  return new Date(iso).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
 }
 
 /* ── LAGER STATUS ── */
