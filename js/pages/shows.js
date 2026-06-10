@@ -474,8 +474,9 @@ async function reconcileShow(id) {
   const sales = Object.values(window._tallySales || {}).filter(s => s.qty > 0);
   const total = sales.reduce((sum, s) => sum + s.qty * s.price, 0);
   const notes = document.getElementById('show-notes')?.value || '';
+  const isReopened = (window._currentShow?.status === 'complete');
 
-  // Build a preview of what will be deducted
+  // Build preview lines
   const previewLines = sales.map(s => {
     const item = window._currentItems?.find(i => i.id === s.itemId);
     const name = item?.name || s.itemId;
@@ -487,11 +488,12 @@ async function reconcileShow(id) {
   }).join('');
 
   const noSales = sales.length === 0;
+  const description = isReopened
+    ? 'Försäljningen uppdateras till nedanstående. Lagret justeras med differensen mot föregående.'
+    : 'Följande avdras permanent från lagret och loggas som försäljning.';
 
   openModal('Stäng spelning — bekräfta',
-    `<div style="margin-bottom:12px;font-size:13px;color:var(--text2)">
-      Följande avdras permanent från lagret och loggas som försäljning. Det går inte att ångra.
-    </div>
+    `<div style="margin-bottom:12px;font-size:13px;color:var(--text2)">${description}</div>
     ${noSales
       ? `<div style="font-size:13px;color:var(--text3);padding:12px 0">Ingen försäljning registrerad.</div>`
       : `<div style="margin-bottom:12px">${previewLines}</div>
@@ -506,41 +508,90 @@ async function reconcileShow(id) {
 }
 
 async function _doReconcile(id) {
-  const sales = Object.values(window._tallySales || {}).filter(s => s.qty > 0);
-  const total = sales.reduce((sum, s) => sum + s.qty * s.price, 0);
+  const newSales = Object.values(window._tallySales || {}).filter(s => s.qty > 0);
+  const newTotal = newSales.reduce((sum, s) => sum + s.qty * s.price, 0);
   const notes = document.getElementById('show-notes')?.value || '';
 
   try {
     const show = await fsGet('merch_shows', id);
 
-    const updatedSales = [...(show.sales || []), {
-      date: now(), amount: total, qty: sales.reduce((s,x) => s+x.qty, 0), notes,
-      lines: sales.map(s => ({ itemId: s.itemId, color: s.color, sz: s.sz, qty: s.qty, price: s.price }))
-    }];
-
-    await fsSet('merch_shows', id, { ...show, status: 'complete', sales: updatedSales, notes });
-
-    for (const s of sales) {
-      const item = window._currentItems?.find(i => i.id === s.itemId);
-      if (!item) continue;
-      const v = (item.variants?.[s.color] || {})?.[s.sz] || {};
-      if (v) {
-        v.sålda = (v.sålda || 0) + s.qty;
-        item.totalStock = Math.max(0, (item.totalStock || 0) - s.qty);
-        await fsSet('merch_items', s.itemId, item);
+    // Build a map of what was previously recorded across all sale entries.
+    // This lets us diff old vs new and only adjust inventory by the delta.
+    const prevQtyMap = {};  // key -> qty
+    for (const entry of (show.sales || [])) {
+      for (const line of (entry.lines || [])) {
+        const key = `${line.itemId}-${line.color}-${line.sz}`;
+        prevQtyMap[key] = (prevQtyMap[key] || 0) + (line.qty || 0);
       }
     }
 
-    if (total > 0) {
+    // Build new qty map from current tally
+    const newQtyMap = {};
+    for (const s of newSales) {
+      const key = `${s.itemId}-${s.color}-${s.sz}`;
+      newQtyMap[key] = s.qty;
+    }
+
+    // Collect all keys that appear in either map
+    const allKeys = new Set([...Object.keys(prevQtyMap), ...Object.keys(newQtyMap)]);
+
+    // Replace show.sales with a single canonical entry representing the full tally.
+    // We don't append — we replace — so reopening and re-closing stays idempotent.
+    const canonicalSales = [{
+      date: show.sales?.[0]?.date || now(),
+      amount: newTotal,
+      qty: newSales.reduce((s, x) => s + x.qty, 0),
+      notes,
+      lines: newSales.map(s => ({ itemId: s.itemId, color: s.color, sz: s.sz, qty: s.qty, price: s.price }))
+    }];
+
+    await fsSet('merch_shows', id, { ...show, status: 'complete', sales: canonicalSales, notes });
+
+    // Apply inventory deltas: only adjust by the difference between old and new qty.
+    // Group by itemId so we fetch/write each item once.
+    const itemDeltas = {};  // itemId -> { [color-sz]: delta }
+    for (const key of allKeys) {
+      const [itemId, color, sz] = key.split('-');
+      const prev = prevQtyMap[key] || 0;
+      const next = newQtyMap[key] || 0;
+      const delta = next - prev;  // positive = more sold, negative = fewer sold
+      if (delta === 0) continue;
+      if (!itemDeltas[itemId]) itemDeltas[itemId] = [];
+      itemDeltas[itemId].push({ color, sz, delta });
+    }
+
+    for (const [itemId, deltas] of Object.entries(itemDeltas)) {
+      const item = window._currentItems?.find(i => i.id === itemId);
+      if (!item) continue;
+      for (const { color, sz, delta } of deltas) {
+        const v = color === '_'
+          ? (item.variants?.['_'] || {})
+          : ((item.variants?.[color] || {})?.[sz] || {});
+        if (!v) continue;
+        v.sålda = Math.max(0, (v.sålda || 0) + delta);
+        item.totalStock = Math.max(0, (item.totalStock || 0) - delta);
+      }
+      await fsSet('merch_items', itemId, item);
+    }
+
+    // Replace the transaction for this show rather than appending.
+    // Find existing sale transaction(s) for this show and delete them first.
+    const existingTxns = await fsQuery('merch_transactions', [
+      { field: 'type',   value: 'sale' },
+      { field: 'showId', value: id },
+    ]);
+    await Promise.all(existingTxns.map(t => fsDelete('merch_transactions', t.id)));
+
+    if (newTotal > 0) {
       await fsAdd('merch_transactions', {
-        type: 'sale', amount: total, date: now(),
+        type: 'sale', amount: newTotal, date: now(),
         showId: id, showNamn: show.name, notes,
         person: 'All'
       });
     }
 
     localStorage.removeItem(tallyStorageKey());
-    showToast(`Spelning avslutad — ${fmt(total)} loggad`);
+    showToast(`Spelning avslutad — ${fmt(newTotal)} loggad`);
     navigate('/shows');
   } catch(err) {
     showToast('Avslutning misslyckades: ' + err.message, 'error');
