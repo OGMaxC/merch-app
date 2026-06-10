@@ -103,11 +103,14 @@ async function saveShow(id) {
     venue:  document.getElementById('sf-venue').value.trim(),
     city:   document.getElementById('sf-city').value.trim(),
     notes:  document.getElementById('sf-notes').value.trim(),
-    pack:   id ? undefined : [],
-    sales:  id ? undefined : [],
     updatedAt: now(),
   };
-  if (!id) data.createdAt = now();
+  // Only initialise pack/sales on creation — never overwrite them on edit
+  if (!id) {
+    data.pack     = [];
+    data.sales    = [];
+    data.createdAt = now();
+  }
 
   try {
     if (id) {
