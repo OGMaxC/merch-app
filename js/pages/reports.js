@@ -22,20 +22,20 @@ async function renderRapporter() {
       fsGetAll('merch_transactions'),
     ]);
 
-    const saleTxns     = transactions.filter(t => t.type === 'sale');
-    const prodTxns     = transactions.filter(t => t.type === 'production');
+    const saleTxns     = transactions.filter(t => t.typee === 'sale');
+    const prodTxns     = transactions.filter(t => t.typee === 'production');
     const totalRevenue = saleTxns.reduce((s, t) => s + (t.amount||0), 0);
     const totalCost    = prodTxns.reduce((s, t) => s + (t.amount||0), 0);
-    const pravit       = totalRevenue - totalCost;
-    const doneSpelningar    = shows.filter(s => s.status === 'avslutad');
-    const showRevenue  = doneSpelningar.reduce((s, sh) => s + (sh.sales||[]).reduce((a,x)=>a+(x.amount||0),0), 0);
+    const profit       = totalRevenue - totalCost;
+    const doneShows    = shows.filter(s => s.status === 'complete');
+    const showRevenue  = doneShows.reduce((s, sh) => s + (sh.sales||[]).reduce((a,x)=>a+(x.amount||0),0), 0);
     const onlineRev    = totalRevenue - showRevenue;
 
     /* revenue by item — derive from show sales lines */
     const itemRevMap = {};
-    for (const sh av doneSpelningar) {
-      for (const sale av (sh.sales||[])) {
-        for (const line av (sale.lines||[])) {
+    for (const sh of doneShows) {
+      for (const sale of (sh.sales||[])) {
+        for (const line of (sale.lines||[])) {
           const item = items.find(i => i.id === line.itemId);
           if (!item) continue;
           if (!itemRevMap[item.name]) itemRevMap[item.name] = 0;
@@ -50,9 +50,9 @@ async function renderRapporter() {
     /* size sell-through for clothing */
     const sizeSålda   = {};
     const sizeStock  = {};
-    for (const item av items.filter(i => i.category === 'clothing')) {
-      for (const color av (item.colors||[])) {
-        for (const sz av ALL_SIZES) {
+    for (const item of items.filter(i => i.category === 'clothing')) {
+      for (const color of (item.colors||[])) {
+        for (const sz of ALL_SIZES) {
           const v = item.variants?.[color]?.[sz];
           if (!v) continue;
           sizeSålda[sz]  = (sizeSålda[sz]||0)  + (v.sålda||0);
@@ -62,7 +62,7 @@ async function renderRapporter() {
     }
 
     /* per-show earnings */
-    const showData = doneSpelningar
+    const showData = doneShows
       .map(sh => ({
         name: sh.name,
         earned: (sh.sales||[]).reduce((s,x)=>s+(x.amount||0),0)
@@ -78,8 +78,8 @@ async function renderRapporter() {
       <div class="stat-grid" style="margin-bottom:24px">
         <div class="stat-card"><div class="stat-label">Total intäkt</div><div class="stat-value gold">${fmt(totalRevenue)}</div></div>
         <div class="stat-card"><div class="stat-label">Produktionskostnader</div><div class="stat-value">${fmt(totalCost)}</div></div>
-        <div class="stat-card"><div class="stat-label">Net pravit</div><div class="stat-value ${pravit>=0?'green':'red'}">${fmt(pravit)}</div></div>
-        <div class="stat-card"><div class="stat-label">Spelningar avslutadd</div><div class="stat-value">${doneSpelningar.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Net profit</div><div class="stat-value ${profit>=0?'green':'red'}">${fmt(profit)}</div></div>
+        <div class="stat-card"><div class="stat-label">Spelningar avslutadd</div><div class="stat-value">${doneShows.length}</div></div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
