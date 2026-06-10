@@ -18,7 +18,7 @@ function registerPage(name, renderFn) {
 async function navigate(path) {
   const page = ROUTES[path] || 'dashboard';
 
-  document.querySelectorAll('.nav-item').forEach(el => {
+  document.querySelectorAll('.nav-item, .mobile-nav a').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
 
