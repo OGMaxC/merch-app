@@ -221,18 +221,18 @@ function tallyBlock(item, show) {
         const varStocks = item.variants?.[color] || {};
         return ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0).map(sz => {
           const v   = varStocks[sz] || { stock: 0, sålda: 0 };
-          const rem = v.stock - (v.sålda || 0);
+          const packRem = v.stock - (v.sålda || 0);
           return `<div class="size-row" id="sr-${item.id}-${color}-${sz}"
             style="display:grid;grid-template-columns:52px 1fr auto;align-items:center;
             background:var(--bg3);border-radius:8px;border:1px solid var(--border);
-            min-height:56px;overflow:hidden;${rem===0?'opacity:0.4':''}">
+            min-height:56px;overflow:hidden;${packRem===0?'opacity:0.4':''}">
             <div style="text-align:center;font-size:15px;font-weight:500;color:var(--text2);
               padding:0 6px;border-right:1px solid var(--border);align-self:stretch;
               display:flex;align-items:center;justify-content:center">${sz}</div>
             <div style="padding:10px 14px">
               <div id="rem-${item.id}-${color}-${sz}" style="font-size:20px;font-weight:500;line-height:1"
-                class="${stockClass(rem)}">${rem}</div>
-              <div style="font-size:10px;color:var(--text3);margin-top:2px">i lager</div>
+                class="${stockClass(packRem)}">${packRem}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">i packen</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;
               border-left:1px solid var(--border);align-self:stretch">
@@ -244,13 +244,12 @@ function tallyBlock(item, show) {
         }).join('');
       }).join('')
     : (() => {
-        const v   = item.variants?.['_'] || { stock: 0, sålda: 0 };
-        const rem = v.stock - (v.sålda || 0);
+        const packRem = item.packQty || 0;
         return `<div style="display:grid;grid-template-columns:1fr auto;align-items:center;
           background:var(--bg3);border-radius:8px;border:1px solid var(--border);min-height:56px;overflow:hidden">
           <div style="padding:10px 16px">
-            <div class="${stockClass(rem)}" style="font-size:20px;font-weight:500">${rem}</div>
-            <div style="font-size:10px;color:var(--text3);margin-top:2px">i lager</div>
+            <div id="rem-${item.id}-_-_" class="${stockClass(packRem)}" style="font-size:20px;font-weight:500">${packRem}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">i packen</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-left:1px solid var(--border)">
             <button class="tally-btn" onclick="tallyAdj('${item.id}','_','_',-1,'${item.salePrice}')">−</button>
@@ -299,7 +298,11 @@ function tallyAdj(itemId, color, sz, delta, price) {
   const item  = window._currentItems?.find(i => i.id === itemId);
   if (!item) return;
 
-  const v     = (item.variants?.[color] || {})?.[sz] || { stock: 0, sålda: 0 };
+  // Non-clothing items store variants at ['_'] with no size key;
+  // clothing stores at [color][sz]. Handle both.
+  const v = (color === '_')
+    ? (item.variants?.['_'] || { stock: 0, sålda: 0 })
+    : ((item.variants?.[color] || {})?.[sz] || { stock: 0, sålda: 0 });
   // Cap at packQty (what was brought to the show), not total inventory stock
   const packMax = (() => {
     const show = window._currentShow;
