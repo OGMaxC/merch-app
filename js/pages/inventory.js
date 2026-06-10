@@ -155,7 +155,7 @@ async function openRedigeraItem(id) {
 }
 
 function buildItemForm(item) {
-  const isKläder = !item || item.category === 'clothing';
+  const isClothing = !item || item.category === 'clothing';
   return `
     <div class="field">
       <label>Namn</label>
@@ -188,7 +188,7 @@ function buildItemForm(item) {
         <input id="f-price" type="number" value="${item?.salePrice||''}"/>
       </div>
     </div>
-    <div class="field" id="f-colors-wrap" style="${!isKläder?'display:none':''}">
+    <div class="field" id="f-colors-wrap" style="${!isClothing?'display:none':''}">
       <label>Grundfärger (välj alla som stämmer)</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
         ${['black','white','burgundy','forest','navy','grey'].map(c =>
@@ -199,11 +199,11 @@ function buildItemForm(item) {
         ).join('')}
       </div>
     </div>
-    <div class="field" id="f-stock-wrap" style="${isKläder?'display:none':''}">
+    <div class="field" id="f-stock-wrap" style="${isClothing?'display:none':''}">
       <label>Initialt lagersaldo</label>
       <input id="f-stock" type="number" value="${item?.variants?.['_']?.stock||''}"/>
     </div>
-    <div id="f-size-grid" style="${!isKläder?'display:none':''}">
+    <div id="f-size-grid" style="${!isClothing?'display:none':''}">
       <!-- populated by JS -->
     </div>
     <div class="field">
