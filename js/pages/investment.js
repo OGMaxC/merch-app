@@ -18,8 +18,8 @@ async function renderInvestering() {
 
   try {
     const transactions = await fsGetAll('merch_transactions');
-    const productions  = transactions.filter(t => t.typee === 'production');
-    const sales        = transactions.filter(t => t.typee === 'sale');
+    const productions  = transactions.filter(t => t.type === 'production');
+    const sales        = transactions.filter(t => t.type === 'sale');
 
     const totalInvested = productions.reduce((s, t) => s + (t.amount || 0), 0);
     const totalRecouped = sales.reduce((s, t) => s + (t.amount || 0), 0);
@@ -91,7 +91,7 @@ async function renderInvestering() {
                 ${fmt(totalRecouped)} of ${fmt(totalInvested)} återvunna
               </div>
               ${profit > 0 ? `<div style="margin-top:12px;padding:10px;background:var(--green-bg);border-radius:6px;font-size:12px;color:var(--green)">
-                Investerings fully recouped. Pravit to split: ${fmt(profit)} (${fmt(profit/3)} vardera)
+                Investeringar återvunna. Vinst att dela: ${fmt(profit)} (${fmt(profit/3)} vardera)
               </div>` : ''}
             </div>
           </div>
@@ -113,9 +113,9 @@ async function renderInvestering() {
                     <td style="color:var(--text2)">${fmtShortDate(t.date)}</td>
                     <td>${t.person||'All'}</td>
                     <td style="color:var(--text2)">${t.itemNamn||t.showNamn||t.notes||'—'}</td>
-                    <td><span class="badge ${t.typee==='production'?'badge-artwork':'badge-done'}">${t.typee}</span></td>
-                    <td style="text-align:right;color:${t.typee==='production'?'var(--amber)':'var(--green)'}">
-                      ${t.typee==='production'?'−':'+'} ${fmt(t.amount||0)}
+                    <td><span class="badge ${t.type==='production'?'badge-artwork':'badge-done'}">${t.type}</span></td>
+                    <td style="text-align:right;color:${t.type==='production'?'var(--amber)':'var(--green)'}">
+                      ${t.type==='production'?'−':'+'} ${fmt(t.amount||0)}
                     </td>
                     <td><button class="btn btn-danger btn-sm" onclick="deleteTransaction('${t.id}')">Ta bort</button></td>
                   </tr>`).join('')
