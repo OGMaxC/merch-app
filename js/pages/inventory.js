@@ -39,13 +39,13 @@ async function renderLager() {
 
     el.innerHTML = `<div class="card"><div class="table-wrap"><table>
       <thead><tr>
-        <th style="width:35%">Item</th>
+        <th style="width:35%">Artikel</th>
         <th>Kategori</th>
-        <th>Colours</th>
-        <th style="text-align:center">Stock</th>
-        <th style="text-align:right">Cost</th>
-        <th style="text-align:right">Price</th>
-        <th style="text-align:right">Margin</th>
+        <th>Färger</th>
+        <th style="text-align:center">Lager</th>
+        <th style="text-align:right">Kostnad</th>
+        <th style="text-align:right">Pris</th>
+        <th style="text-align:right">Marginal</th>
         <th></th>
       </tr></thead>
       <tbody id="inv-tbody"></tbody>
@@ -111,7 +111,7 @@ async function openItemDetail(id) {
           ${colorDot(color)} ${color}
         </div>
         <table style="width:200px">
-          <thead><tr><th>Size</th><th>Stock</th><th>Sålda</th></tr></thead>
+          <thead><tr><th>Storlek</th><th>Lager</th><th>Sålda</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>`;
