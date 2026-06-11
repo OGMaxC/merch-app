@@ -113,7 +113,10 @@ async function renderEkonomi() {
                     <td style="text-align:right;color:${t.direction==='in'?'var(--green)':'var(--amber)'}">
                       ${t.direction==='in'?'+':'−'} ${fmt(t.amount||0)}
                     </td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteTxn('${t.id}')">Ta bort</button></td>
+                    <td style="display:flex;gap:4px">
+                      <button class="btn btn-ghost btn-sm" onclick="openEditTxn('${t.id}')">Redigera</button>
+                      <button class="btn btn-danger btn-sm" onclick="deleteTxn('${t.id}')">Ta bort</button>
+                    </td>
                   </tr>`).join('')}
                 </tbody>
               </table>
@@ -189,7 +192,10 @@ async function renderEkonomi() {
                       <td style="text-align:right;color:${t.direction==='in'?'var(--green)':'var(--amber)'}">
                         ${t.direction==='in'?'+':'−'} ${fmt(t.amount||0)}
                       </td>
-                      <td><button class="btn btn-danger btn-sm" onclick="deleteTxn('${t.id}')">Ta bort</button></td>
+                      <td style="display:flex;gap:4px">
+                        <button class="btn btn-ghost btn-sm" onclick="openEditTxn('${t.id}')">Redigera</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteTxn('${t.id}')">Ta bort</button>
+                      </td>
                     </tr>`).join('')
                   : '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:24px">Inga transaktioner ännu</td></tr>'}
               </tbody>
@@ -319,6 +325,81 @@ function openLogTxn() {
     `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
      <button class="btn btn-primary" onclick="saveTxn()">Spara</button>`
   );
+}
+
+async function openEditTxn(id) {
+  // Load all transactions and find the one to edit
+  const raw  = await fsGetAll('merch_transactions');
+  const txns = raw.map(normalizeTxn);
+  const t    = txns.find(x => x.id === id);
+  if (!t) { showToast('Transaktion hittades inte', 'error'); return; }
+
+  openModal('Redigera transaktion',
+    `<div class="field-row">
+      <div class="field"><label>Riktning</label>
+        <select id="txn-direction">
+          <option value="ut"  ${t.direction==='ut' ?'selected':''}>Utgift (−)</option>
+          <option value="in"  ${t.direction==='in' ?'selected':''}>Intäkt / återbetalning (+)</option>
+        </select>
+      </div>
+      <div class="field"><label>Person</label>
+        <select id="txn-person">
+          ${PERSONS.map(p=>`<option value="${p}" ${t.person===p?'selected':''}>${p}</option>`).join('')}
+          <option value="Alla" ${t.person==='Alla'?'selected':''}>Alla</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Kategori</label>
+        <select id="txn-category">
+          ${EXPENSE_CATEGORIES.map(c=>`<option value="${c}" ${t.category===c?'selected':''}>${c}</option>`).join('')}
+          <option value="Försäljning" ${t.category==='Försäljning'?'selected':''}>Försäljning</option>
+        </select>
+      </div>
+      <div class="field"><label>Projekt</label>
+        <input id="txn-project" type="text" list="project-suggestions"
+               value="${t.project||''}" placeholder="t.ex. Plaguelords, Sommarturné 2026"/>
+      </div>
+    </div>
+    <div class="field"><label>Beskrivning</label>
+      <input id="txn-description" type="text" value="${t.description||t.notes||''}" placeholder="Valfri fritext"/>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Belopp (kr)</label>
+        <input id="txn-amount" type="number" value="${t.amount||''}"/>
+      </div>
+      <div class="field"><label>Datum</label>
+        <input id="txn-date" type="date" value="${t.date||''}"/>
+      </div>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-primary" onclick="updateTxn('${id}')">Spara ändringar</button>`
+  );
+}
+
+async function updateTxn(id) {
+  const amount = parseFloat(document.getElementById('txn-amount')?.value) || 0;
+  if (!amount) { showToast('Belopp krävs', 'error'); return; }
+
+  const data = {
+    direction:   document.getElementById('txn-direction').value,
+    person:      document.getElementById('txn-person').value,
+    category:    document.getElementById('txn-category').value,
+    project:     document.getElementById('txn-project').value.trim(),
+    description: document.getElementById('txn-description').value.trim(),
+    amount,
+    date:        document.getElementById('txn-date').value,
+  };
+
+  try {
+    const existing = await fsGet('merch_transactions', id);
+    await fsSet('merch_transactions', id, { ...existing, ...data });
+    showToast('Transaktion uppdaterad');
+    closeModal();
+    await renderEkonomi();
+  } catch(err) {
+    showToast('Uppdatering misslyckades: ' + err.message, 'error');
+  }
 }
 
 async function saveTxn() {
