@@ -577,3 +577,21 @@ tr:hover td { background: var(--bg3); }
     min-width: 34px;
   }
 }
+
+/* ── TABS ── */
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px 10px;
+  transition: color .15s, border-color .15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.tab-active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
