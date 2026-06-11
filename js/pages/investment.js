@@ -138,17 +138,19 @@ async function renderEkonomi() {
         </div></div>
         <div class="card"><div class="card-body">
           <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">Per projekt</div>
-          ${renderPie(projPie, totalUt)}
+          ${renderPie(projPie, totalUt, true)}
         </div></div>
       </div>
 
       <!-- SUMMARY CARDS -->
-      <div class="stat-grid" style="margin-bottom:24px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
         <div class="stat-card"><div class="stat-label">Totalt ut</div><div class="stat-value amber">${fmt(totalUt)}</div></div>
         <div class="stat-card"><div class="stat-label">Totalt in</div><div class="stat-value green">${fmt(totalIn)}</div></div>
         <div class="stat-card"><div class="stat-label">Netto</div>
           <div class="stat-value" style="color:${netto>=0?'var(--green)':'var(--red)'}">${netto>=0?'+':''}${fmt(netto)}</div>
         </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(${PERSONS.length},1fr);gap:12px;margin-bottom:24px">
         ${PERSONS.map(p => {
           const d = personSummary[p] || {ut:0,in:0};
           const n = d.in - d.ut;
@@ -220,7 +222,7 @@ const PIE_COLORS = [
   '#9B6B9B','#8B8B4A','#6B9B8B','#A05050','#7B7B7B',
 ];
 
-function renderPie(data, total) {
+function renderPie(data, total, showAmounts = false) {
   if (!data.length || total === 0) {
     return `<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Ingen data</div>`;
   }
@@ -258,7 +260,10 @@ function renderPie(data, total) {
       <div style="width:8px;height:8px;border-radius:2px;background:${s.color};flex-shrink:0"></div>
       <span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1"
             title="${s.label}">${s.label}</span>
-      <span style="color:var(--text3);flex-shrink:0">${Math.round(s.frac*100)}%</span>
+      ${showAmounts
+        ? `<span style="color:var(--text3);flex-shrink:0">${fmt(s.value)} · ${Math.round(s.frac*100)}%</span>`
+        : `<span style="color:var(--text3);flex-shrink:0">${Math.round(s.frac*100)}%</span>`
+      }
     </div>`).join('');
 
   return `
