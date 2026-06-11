@@ -1,376 +1,359 @@
 /* js/pages/investment.js */
 
 const EXPENSE_CATEGORIES = [
-  'Repetitionslokal',
   'Inspelning / Studio',
-  'Mastering',
-  'Turné / Transport',
-  'Bokning',
-  'Marknadsföring',
+  'Mixning / Mastering',
+  'Pressning (vinyl, CD, kassett)',
+  'Merch-produktion',
+  'Artwork / Foto / Video',
+  'Marknadsföring / PR',
   'Trycksaker',
+  'Turné / Bokning',
+  'Transport / Logi',
   'Övrigt',
 ];
 
-const ALBUMS = ['Bonegoat', 'Plaguelords', 'Ingen koppling'];
+/* Normalize legacy transactions (type:'production'/'sale') to new direction model */
+function normalizeTxn(t) {
+  if (t.direction) return t;
+  return {
+    ...t,
+    direction: t.type === 'sale' ? 'in' : 'ut',
+    category:  t.category || (t.type === 'sale' ? 'Försäljning' : 'Övrigt'),
+    project:   t.project  || t.itemNamn || t.showNamn || '',
+  };
+}
 
 registerPage('investment', async (container) => {
   container.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Ekonomi</div></div>
-      <div style="display:flex;gap:8px" id="invest-header-actions"></div>
-    </div>
-    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px">
-      <button id="tab-investering" class="tab-btn tab-active" onclick="switchInvestTab('investering')">Investering</button>
-      <button id="tab-utgifter"    class="tab-btn"            onclick="switchInvestTab('utgifter')">Utgifter</button>
+      <button class="btn btn-primary btn-sm" onclick="openLogTxn()">+ Logga</button>
     </div>
     <div id="invest-content"></div>
   `;
-  switchInvestTab('investering');
+  await renderEkonomi();
 });
 
-function switchInvestTab(tab) {
-  document.getElementById('tab-investering').className = 'tab-btn' + (tab === 'investering' ? ' tab-active' : '');
-  document.getElementById('tab-utgifter').className    = 'tab-btn' + (tab === 'utgifter'    ? ' tab-active' : '');
-  const actions = document.getElementById('invest-header-actions');
-  if (tab === 'investering') {
-    actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openLogPayment()">+ Logga betalning</button>`;
-    renderInvestering();
-  } else {
-    actions.innerHTML = `<button class="btn btn-primary btn-sm" onclick="openLogExpense()">+ Lägg till utgift</button>`;
-    renderUtgifter();
-  }
-}
-
-/* ── INVESTERING TAB ── */
-
-async function renderInvestering() {
+async function renderEkonomi() {
   const el = document.getElementById('invest-content');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--text3);padding:20px">Laddar…</div>';
 
   try {
-    const transactions = await fsGetAll('merch_transactions');
-    const productions  = transactions.filter(t => t.type === 'production');
-    const sales        = transactions.filter(t => t.type === 'sale');
+    const raw      = await fsGetAll('merch_transactions');
+    const txns     = raw.map(normalizeTxn);
+    const utgifter = txns.filter(t => t.direction === 'ut');
+    const intakter = txns.filter(t => t.direction === 'in');
 
-    const totalInvested = productions.reduce((s, t) => s + (t.amount || 0), 0);
-    const totalRecouped = sales.reduce((s, t) => s + (t.amount || 0), 0);
-    const profit        = Math.max(0, totalRecouped - totalInvested);
-    const stillOwed     = Math.max(0, totalInvested - totalRecouped);
+    const totalUt  = utgifter.reduce((s, t) => s + (t.amount || 0), 0);
+    const totalIn  = intakter.reduce((s, t) => s + (t.amount || 0), 0);
+    const netto    = totalIn - totalUt;
 
-    const personData = {};
-    for (const p of PERSONS) {
-      const inv = productions.filter(t => t.person === p).reduce((s, t) => s + (t.amount||0), 0);
-      personData[p] = { invested: inv };
+    /* ── Per-person summaries ── */
+    const personSummary = {};
+    for (const p of PERSONS) personSummary[p] = { ut: 0, in: 0 };
+    for (const t of txns) {
+      if (!personSummary[t.person]) personSummary[t.person] = { ut: 0, in: 0 };
+      if (t.direction === 'ut') personSummary[t.person].ut += (t.amount || 0);
+      else                       personSummary[t.person].in += (t.amount || 0);
     }
 
-    const totalInv = Object.values(personData).reduce((s, p) => s + p.invested, 0);
-    for (const p of PERSONS) {
-      const share = totalInv > 0 ? personData[p].invested / totalInv : 0;
-      personData[p].recouped = Math.min(personData[p].invested, totalRecouped * share);
-      personData[p].owed     = Math.max(0, personData[p].invested - personData[p].recouped);
+    /* ── Pie data ── */
+    const personPie   = PERSONS.map(p => ({ label: p, value: personSummary[p]?.ut || 0 }))
+                               .filter(d => d.value > 0);
+
+    const catMap = {};
+    for (const t of utgifter) catMap[t.category] = (catMap[t.category] || 0) + (t.amount || 0);
+    const catPie = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+
+    const projMap = {};
+    for (const t of utgifter) {
+      const key = t.project || 'Övrigt';
+      projMap[key] = (projMap[key] || 0) + (t.amount || 0);
     }
+    const projPie = Object.entries(projMap).sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
 
-    const pct = totalInvested > 0 ? Math.min(100, Math.round(totalRecouped / totalInvested * 100)) : 0;
+    /* ── All unique projects for autocomplete ── */
+    const allProjects = [...new Set(txns.map(t => t.project).filter(Boolean))];
 
-    el.innerHTML = `
-      <div class="stat-grid">
-        <div class="stat-card"><div class="stat-label">Totalt investerat</div><div class="stat-value">${fmt(totalInvested)}</div></div>
-        <div class="stat-card"><div class="stat-label">Återvunnet</div><div class="stat-value gold">${fmt(totalRecouped)}</div></div>
-        <div class="stat-card"><div class="stat-label">Kvar att återvinna</div><div class="stat-value amber">${fmt(stillOwed)}</div></div>
-        <div class="stat-card"><div class="stat-label">Vinst (efter återvinning)</div><div class="stat-value green">${fmt(profit)}</div></div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
-        <div class="section">
-          <div class="section-header"><div class="section-title">Per person</div></div>
-          <div class="card">
-            ${PERSONS.map(p => {
-              const d = personData[p];
-              const pPct = d.invested > 0 ? Math.min(100, Math.round(d.recouped / d.invested * 100)) : 0;
-              return `<div class="card-body" style="border-bottom:1px solid var(--bg3)">
-                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-                  <span style="font-weight:500">${p}</span>
-                  <span style="font-size:12px;color:${d.owed>0?'var(--amber)':'var(--green)'}">
-                    ${d.owed > 0 ? `${fmt(d.owed)} skyldig` : 'Återvunnet'}
-                  </span>
-                </div>
-                <div style="font-size:11px;color:var(--text2);margin-bottom:6px">
-                  Betalat ${fmt(d.invested)} · Återvunnet ${fmt(d.recouped)}
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill${pPct>=100?' full':''}" style="width:${pPct}%"></div>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-header"><div class="section-title">Samlad progress</div></div>
-          <div class="card">
-            <div class="card-body">
-              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
-                <span style="color:var(--text2)">Total återvinningsprogress</span>
-                <span style="color:var(--gold)">${pct}%</span>
-              </div>
-              <div class="progress-bar" style="height:10px">
-                <div class="progress-fill${pct>=100?' full':''}" style="width:${pct}%"></div>
-              </div>
-              <div style="font-size:11px;color:var(--text3);margin-top:8px">
-                ${fmt(totalRecouped)} av ${fmt(totalInvested)} återvunna
-              </div>
-              ${profit > 0 ? `<div style="margin-top:12px;padding:10px;background:var(--green-bg);border-radius:6px;font-size:12px;color:var(--green)">
-                Investeringar återvunna. Vinst att dela: ${fmt(profit)} (${fmt(profit/3)} vardera)
-              </div>` : ''}
+    /* ── Per-person detail rows ── */
+    const personRows = PERSONS.map(p => {
+      const mine = [...txns].filter(t => t.person === p)
+                            .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      if (!mine.length) return '';
+      const myUt = mine.filter(t=>t.direction==='ut').reduce((s,t)=>s+(t.amount||0),0);
+      const myIn = mine.filter(t=>t.direction==='in').reduce((s,t)=>s+(t.amount||0),0);
+      const myNetto = myIn - myUt;
+      return `
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;
+               cursor:pointer;user-select:none" onclick="togglePersonRows('${p}')">
+            <div style="font-weight:500">${p}</div>
+            <div style="display:flex;gap:20px;align-items:center;font-size:12px">
+              <span style="color:var(--amber)">− ${fmt(myUt)}</span>
+              ${myIn > 0 ? `<span style="color:var(--green)">+ ${fmt(myIn)}</span>` : ''}
+              <span style="color:${myNetto>=0?'var(--green)':'var(--red)'}">
+                Netto: ${myNetto>=0?'+':''}${fmt(myNetto)}
+              </span>
+              <span style="color:var(--text3);font-size:16px" id="chevron-${p}">▸</span>
             </div>
           </div>
-        </div>
+          <div id="person-rows-${p}" style="display:none;border-top:1px solid var(--border)">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Datum</th><th>Kategori</th><th>Projekt</th><th>Beskrivning</th>
+                  <th style="text-align:right">Belopp</th><th></th></tr></thead>
+                <tbody>
+                  ${mine.map(t => `<tr>
+                    <td style="color:var(--text2);font-size:12px">${fmtShortDate(t.date)}</td>
+                    <td><span class="badge badge-artwork" style="font-size:10px">${t.category||'—'}</span></td>
+                    <td style="font-size:12px;color:var(--text2)">${t.project||'—'}</td>
+                    <td style="font-size:12px;color:var(--text3)">${t.description||t.notes||'—'}</td>
+                    <td style="text-align:right;color:${t.direction==='in'?'var(--green)':'var(--amber)'}">
+                      ${t.direction==='in'?'+':'−'} ${fmt(t.amount||0)}
+                    </td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteTxn('${t.id}')">Ta bort</button></td>
+                  </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <!-- PIE CHARTS -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div class="card"><div class="card-body">
+          <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">Per person</div>
+          ${renderPie(personPie, totalUt)}
+        </div></div>
+        <div class="card"><div class="card-body">
+          <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">Per kategori</div>
+          ${renderPie(catPie, totalUt)}
+        </div></div>
+        <div class="card"><div class="card-body">
+          <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">Per projekt</div>
+          ${renderPie(projPie, totalUt)}
+        </div></div>
       </div>
 
+      <!-- SUMMARY CARDS -->
+      <div class="stat-grid" style="margin-bottom:24px">
+        <div class="stat-card"><div class="stat-label">Totalt ut</div><div class="stat-value amber">${fmt(totalUt)}</div></div>
+        <div class="stat-card"><div class="stat-label">Totalt in</div><div class="stat-value green">${fmt(totalIn)}</div></div>
+        <div class="stat-card"><div class="stat-label">Netto</div>
+          <div class="stat-value" style="color:${netto>=0?'var(--green)':'var(--red)'}">${netto>=0?'+':''}${fmt(netto)}</div>
+        </div>
+        ${PERSONS.map(p => {
+          const d = personSummary[p] || {ut:0,in:0};
+          const n = d.in - d.ut;
+          return `<div class="stat-card">
+            <div class="stat-label">${p}</div>
+            <div class="stat-value" style="font-size:16px;color:${n>=0?'var(--green)':'var(--red)'}">
+              ${n>=0?'+':''}${fmt(n)}
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">
+              − ${fmt(d.ut)}${d.in>0?` · + ${fmt(d.in)}`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- PER PERSON DETAIL -->
+      <div class="section" style="margin-bottom:24px">
+        <div class="section-header"><div class="section-title">Per person</div></div>
+        ${personRows || '<div style="color:var(--text3);padding:12px">Inga transaktioner ännu</div>'}
+      </div>
+
+      <!-- ALL TRANSACTIONS -->
       <div class="section">
         <div class="section-header">
           <div class="section-title">Alla transaktioner</div>
-          <button class="btn btn-ghost btn-sm" onclick="openLogPayment()">+ Logga betalning</button>
+          <button class="btn btn-ghost btn-sm" onclick="openLogTxn()">+ Logga</button>
         </div>
         <div class="card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Datum</th><th>Person</th><th>Artikel / Spelning</th><th>Typ</th><th style="text-align:right">Belopp</th><th></th></tr></thead>
+              <thead><tr><th>Datum</th><th>Person</th><th>Kategori</th><th>Projekt</th>
+                <th>Beskrivning</th><th style="text-align:right">Belopp</th><th></th></tr></thead>
               <tbody>
-                ${transactions.length
-                  ? [...transactions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t => `<tr>
-                    <td style="color:var(--text2)">${fmtShortDate(t.date)}</td>
-                    <td>${t.person||'All'}</td>
-                    <td style="color:var(--text2)">${t.itemNamn||t.showNamn||t.notes||'—'}</td>
-                    <td><span class="badge ${t.type==='production'?'badge-artwork':'badge-done'}">${t.type}</span></td>
-                    <td style="text-align:right;color:${t.type==='production'?'var(--amber)':'var(--green)'}">
-                      ${t.type==='production'?'−':'+'} ${fmt(t.amount||0)}
-                    </td>
-                    <td><button class="btn btn-danger btn-sm" onclick="deleteTransaction('${t.id}')">Ta bort</button></td>
-                  </tr>`).join('')
-                  : '<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:24px">Inga transaktioner ännu</td></tr>'}
+                ${txns.length
+                  ? [...txns].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t=>`<tr>
+                      <td style="color:var(--text2);font-size:12px">${fmtShortDate(t.date)}</td>
+                      <td style="font-size:12px">${t.person||'—'}</td>
+                      <td><span class="badge badge-artwork" style="font-size:10px">${t.category||'—'}</span></td>
+                      <td style="font-size:12px;color:var(--text2)">${t.project||'—'}</td>
+                      <td style="font-size:12px;color:var(--text3)">${t.description||t.notes||'—'}</td>
+                      <td style="text-align:right;color:${t.direction==='in'?'var(--green)':'var(--amber)'}">
+                        ${t.direction==='in'?'+':'−'} ${fmt(t.amount||0)}
+                      </td>
+                      <td><button class="btn btn-danger btn-sm" onclick="deleteTxn('${t.id}')">Ta bort</button></td>
+                    </tr>`).join('')
+                  : '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:24px">Inga transaktioner ännu</td></tr>'}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      <!-- hidden project list for datalist -->
+      <datalist id="project-suggestions">
+        ${allProjects.map(p=>`<option value="${p}">`).join('')}
+      </datalist>
     `;
   } catch(err) {
     el.innerHTML = `<div style="color:var(--red);padding:20px">Fel: ${err.message}</div>`;
   }
 }
 
-function openLogPayment() {
-  openModal('Logga betalning',
-    `<div class="field"><label>Typ</label>
-      <select id="tp-type">
-        <option value="production">Produktion (investering)</option>
-        <option value="sale">Försäljning / intäkt</option>
-      </select>
-    </div>
-    <div class="field"><label>Person</label>
-      <select id="tp-person">
-        ${PERSONS.map(p => `<option value="${p}">${p}</option>`).join('')}
-        <option value="All">Alla (delas lika)</option>
-      </select>
+/* ── PIE CHART (SVG) ── */
+const PIE_COLORS = [
+  '#D4B040','#C87941','#8B5E3C','#6B8E6B','#5B7A8B',
+  '#9B6B9B','#8B8B4A','#6B9B8B','#A05050','#7B7B7B',
+];
+
+function renderPie(data, total) {
+  if (!data.length || total === 0) {
+    return `<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Ingen data</div>`;
+  }
+
+  const size  = 130;
+  const cx    = size / 2;
+  const cy    = size / 2;
+  const r     = 52;
+  const inner = 28;
+
+  let angle = -Math.PI / 2;
+  const slices = data.map((d, i) => {
+    const frac  = d.value / total;
+    const start = angle;
+    angle      += frac * 2 * Math.PI;
+    return { ...d, frac, start, end: angle, color: PIE_COLORS[i % PIE_COLORS.length] };
+  });
+
+  function arc(s, e, outerR, innerR) {
+    const x1 = cx + outerR * Math.cos(s), y1 = cy + outerR * Math.sin(s);
+    const x2 = cx + outerR * Math.cos(e), y2 = cy + outerR * Math.sin(e);
+    const x3 = cx + innerR * Math.cos(e), y3 = cy + innerR * Math.sin(e);
+    const x4 = cx + innerR * Math.cos(s), y4 = cy + innerR * Math.sin(s);
+    const large = (e - s) > Math.PI ? 1 : 0;
+    return `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${large} 1 ${x2} ${y2}
+            L ${x3} ${y3} A ${innerR} ${innerR} 0 ${large} 0 ${x4} ${y4} Z`;
+  }
+
+  const paths = slices.map(s =>
+    `<path d="${arc(s.start, s.end, r, inner)}" fill="${s.color}" opacity="0.9"/>`
+  ).join('');
+
+  const legend = slices.map(s => `
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:4px;min-width:0">
+      <div style="width:8px;height:8px;border-radius:2px;background:${s.color};flex-shrink:0"></div>
+      <span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1"
+            title="${s.label}">${s.label}</span>
+      <span style="color:var(--text3);flex-shrink:0">${Math.round(s.frac*100)}%</span>
+    </div>`).join('');
+
+  return `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        ${paths}
+        <text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle"
+              fill="var(--text)" font-size="11" font-weight="500">${fmt(total)}</text>
+      </svg>
+      <div style="width:100%">${legend}</div>
+    </div>`;
+}
+
+/* ── TOGGLE PERSON ROWS ── */
+function togglePersonRows(person) {
+  const el  = document.getElementById(`person-rows-${person}`);
+  const chv = document.getElementById(`chevron-${person}`);
+  if (!el) return;
+  const open = el.style.display === 'none';
+  el.style.display  = open ? 'block' : 'none';
+  chv.textContent   = open ? '▾' : '▸';
+}
+
+/* ── LOG MODAL ── */
+function openLogTxn() {
+  openModal('Logga transaktion',
+    `<div class="field-row">
+      <div class="field"><label>Riktning</label>
+        <select id="txn-direction">
+          <option value="ut">Utgift (−)</option>
+          <option value="in">Intäkt / återbetalning (+)</option>
+        </select>
+      </div>
+      <div class="field"><label>Person</label>
+        <select id="txn-person">
+          ${PERSONS.map(p=>`<option value="${p}">${p}</option>`).join('')}
+          <option value="Alla">Alla</option>
+        </select>
+      </div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Belopp (kr)</label><input id="tp-amount" type="number" placeholder="0"/></div>
-      <div class="field"><label>Datum</label><input id="tp-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div>
-    </div>
-    <div class="field"><label>Artikel / anteckning</label><input id="tp-note" type="text" placeholder="t.ex. Plaguelords skjorta, tryckkostnader"/></div>`,
-    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
-     <button class="btn btn-primary" onclick="savePayment()">Logga betalning</button>`
-  );
-}
-
-async function savePayment() {
-  const amount = parseFloat(document.getElementById('tp-amount')?.value) || 0;
-  if (!amount) { showToast('Belopp krävs', 'error'); return; }
-
-  const data = {
-    type:   document.getElementById('tp-type').value,
-    person: document.getElementById('tp-person').value,
-    amount,
-    date:   document.getElementById('tp-date').value,
-    notes:  document.getElementById('tp-note').value.trim(),
-    createdAt: now(),
-  };
-
-  try {
-    await fsAdd('merch_transactions', data);
-    showToast('Betalning loggad');
-    closeModal();
-    await renderInvestering();
-  } catch(err) {
-    showToast('Sparningen misslyckades: ' + err.message, 'error');
-  }
-}
-
-async function deleteTransaction(id) {
-  confirmAction('Ta bort den här transaktionen?', async () => {
-    await fsDelete('merch_transactions', id);
-    showToast('Transaktion borttagen');
-    await renderInvestering();
-  });
-}
-
-/* ── UTGIFTER TAB ── */
-
-async function renderUtgifter() {
-  const el = document.getElementById('invest-content');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--text3);padding:20px">Laddar…</div>';
-
-  try {
-    const expenses = await fsGetAll('merch_expenses');
-    const sorted   = [...expenses].sort((a, b) => (b.date||'').localeCompare(a.date||''));
-    const total    = expenses.reduce((s, e) => s + (e.amount || 0), 0);
-
-    // Totals per album
-    const albumTotals = {};
-    for (const album of ALBUMS) albumTotals[album] = 0;
-    for (const e of expenses) {
-      const key = e.album || 'Ingen koppling';
-      albumTotals[key] = (albumTotals[key] || 0) + (e.amount || 0);
-    }
-
-    // Totals per category
-    const catTotals = {};
-    for (const e of expenses) {
-      catTotals[e.category] = (catTotals[e.category] || 0) + (e.amount || 0);
-    }
-    const topCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-
-    el.innerHTML = `
-      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="stat-card"><div class="stat-label">Totala utgifter</div><div class="stat-value amber">${fmt(total)}</div></div>
-        ${ALBUMS.filter(a => a !== 'Ingen koppling').map(album => `
-          <div class="stat-card">
-            <div class="stat-label">${album}</div>
-            <div class="stat-value" style="font-size:18px">${fmt(albumTotals[album] || 0)}</div>
-          </div>`).join('')}
-      </div>
-
-      ${topCats.length ? `
-      <div class="section" style="margin-bottom:24px">
-        <div class="section-header"><div class="section-title">Per kategori</div></div>
-        <div class="card">
-          <div class="card-body" style="display:flex;flex-wrap:wrap;gap:10px">
-            ${topCats.map(([cat, amt]) => `
-              <div style="background:var(--bg3);border-radius:6px;padding:8px 14px;font-size:12px">
-                <div style="color:var(--text2);margin-bottom:2px">${cat}</div>
-                <div style="color:var(--amber);font-weight:500">${fmt(amt)}</div>
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>` : ''}
-
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Alla utgifter</div>
-          <button class="btn btn-ghost btn-sm" onclick="openLogExpense()">+ Lägg till utgift</button>
-        </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Datum</th>
-                  <th>Kategori</th>
-                  <th>Beskrivning</th>
-                  <th>Album</th>
-                  <th>Betald av</th>
-                  <th style="text-align:right">Belopp</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                ${sorted.length
-                  ? sorted.map(e => `<tr>
-                      <td style="color:var(--text2)">${fmtShortDate(e.date)}</td>
-                      <td><span class="badge badge-artwork" style="font-size:10px">${e.category||'—'}</span></td>
-                      <td style="color:var(--text2)">${e.description||'—'}</td>
-                      <td style="color:var(--text3);font-size:12px">${e.album && e.album !== 'Ingen koppling' ? e.album : '—'}</td>
-                      <td style="font-size:12px">${e.person||'—'}</td>
-                      <td style="text-align:right;color:var(--amber)">− ${fmt(e.amount||0)}</td>
-                      <td><button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">Ta bort</button></td>
-                    </tr>`).join('')
-                  : '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:24px">Inga utgifter loggade ännu</td></tr>'}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    `;
-  } catch(err) {
-    el.innerHTML = `<div style="color:var(--red);padding:20px">Fel: ${err.message}</div>`;
-  }
-}
-
-function openLogExpense(existingId) {
-  openModal('Logga utgift',
-    `<div class="field-row">
       <div class="field"><label>Kategori</label>
-        <select id="ex-category">
-          ${EXPENSE_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        <select id="txn-category">
+          ${EXPENSE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('')}
+          <option value="Försäljning">Försäljning</option>
         </select>
       </div>
-      <div class="field"><label>Album</label>
-        <select id="ex-album">
-          ${ALBUMS.map(a => `<option value="${a}">${a}</option>`).join('')}
-        </select>
+      <div class="field"><label>Projekt</label>
+        <input id="txn-project" type="text" list="project-suggestions"
+               placeholder="t.ex. Plaguelords, Sommarturné 2026"/>
       </div>
     </div>
     <div class="field"><label>Beskrivning</label>
-      <input id="ex-description" type="text" placeholder="t.ex. Studio Cobra, 2 dagar"/>
+      <input id="txn-description" type="text" placeholder="Valfri fritext"/>
     </div>
     <div class="field-row">
-      <div class="field"><label>Belopp (kr)</label><input id="ex-amount" type="number" placeholder="0"/></div>
-      <div class="field"><label>Datum</label><input id="ex-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div>
-    </div>
-    <div class="field"><label>Betald av</label>
-      <select id="ex-person">
-        ${PERSONS.map(p => `<option value="${p}">${p}</option>`).join('')}
-        <option value="Alla">Alla (delas lika)</option>
-      </select>
+      <div class="field"><label>Belopp (kr)</label>
+        <input id="txn-amount" type="number" placeholder="0"/>
+      </div>
+      <div class="field"><label>Datum</label>
+        <input id="txn-date" type="date" value="${new Date().toISOString().split('T')[0]}"/>
+      </div>
     </div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
-     <button class="btn btn-primary" onclick="saveExpense()">Spara utgift</button>`
+     <button class="btn btn-primary" onclick="saveTxn()">Spara</button>`
   );
 }
 
-async function saveExpense() {
-  const amount = parseFloat(document.getElementById('ex-amount')?.value) || 0;
+async function saveTxn() {
+  const amount = parseFloat(document.getElementById('txn-amount')?.value) || 0;
   if (!amount) { showToast('Belopp krävs', 'error'); return; }
-  const description = document.getElementById('ex-description').value.trim();
-  if (!description) { showToast('Beskrivning krävs', 'error'); return; }
 
   const data = {
-    category:    document.getElementById('ex-category').value,
-    album:       document.getElementById('ex-album').value,
-    description,
+    direction:   document.getElementById('txn-direction').value,
+    person:      document.getElementById('txn-person').value,
+    category:    document.getElementById('txn-category').value,
+    project:     document.getElementById('txn-project').value.trim(),
+    description: document.getElementById('txn-description').value.trim(),
     amount,
-    date:        document.getElementById('ex-date').value,
-    person:      document.getElementById('ex-person').value,
+    date:        document.getElementById('txn-date').value,
     createdAt:   now(),
   };
 
   try {
-    await fsAdd('merch_expenses', data);
-    showToast('Utgift sparad');
+    await fsAdd('merch_transactions', data);
+    showToast('Transaktion sparad');
     closeModal();
-    await renderUtgifter();
+    await renderEkonomi();
   } catch(err) {
     showToast('Sparningen misslyckades: ' + err.message, 'error');
   }
 }
 
-async function deleteExpense(id) {
-  confirmAction('Ta bort den här utgiften?', async () => {
-    await fsDelete('merch_expenses', id);
-    showToast('Utgift borttagen');
-    await renderUtgifter();
+async function deleteTxn(id) {
+  confirmAction('Ta bort den här transaktionen?', async () => {
+    await fsDelete('merch_transactions', id);
+    showToast('Transaktion borttagen');
+    await renderEkonomi();
   });
 }
+
+/* Keep old function names alive so any cached calls don't 404 */
+const openLogPayment  = openLogTxn;
+const deleteTransaction = deleteTxn;
