@@ -547,7 +547,7 @@ tr:hover td { background: var(--bg3); }
   }
   /* Hide pie charts on mobile — text summaries are enough */
   .pie-charts-row {
-    display: none;
+    display: none !important;
   }
   /* Smaller stat values so they don't overflow their cards */
   .stat-value {
@@ -592,4 +592,3 @@ tr:hover td { background: var(--bg3); }
     min-width: 34px;
   }
 }
-
