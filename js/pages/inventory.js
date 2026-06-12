@@ -307,7 +307,7 @@ async function saveItem(id) {
     closeModal();
     await renderLager();
   } catch (err) {
-    showToast('Sparningen misslyckades: ' + err.message, 'error');
+    handleFsError(err, 'Sparningen misslyckades');
   }
 }
 

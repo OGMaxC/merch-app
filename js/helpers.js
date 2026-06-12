@@ -85,3 +85,43 @@ function confirmAction(msg, onBekräfta) {
      <button class="btn btn-danger" onclick="closeModal();window._confirmCallback()">Bekräfta</button>`
   );
 }
+
+/* ── NETWORK STATUS ── */
+function updateOfflineBanner() {
+  const banner = document.getElementById('offline-banner');
+  if (!banner) return;
+  if (navigator.onLine) {
+    banner.style.display = 'none';
+    document.querySelector('.main-area') && (document.querySelector('.main-area').style.paddingTop = '');
+  } else {
+    banner.style.display = 'block';
+    document.querySelector('.main-area') && (document.querySelector('.main-area').style.paddingTop = '40px');
+  }
+}
+
+window.addEventListener('online',  () => {
+  updateOfflineBanner();
+  showToast('Uppkoppling återställd', 'success');
+});
+window.addEventListener('offline', () => {
+  updateOfflineBanner();
+});
+
+document.addEventListener('DOMContentLoaded', updateOfflineBanner);
+
+/* ── FIRESTORE ERROR HELPER ── */
+function handleFsError(err, context) {
+  const offline = !navigator.onLine;
+  if (offline) {
+    showToast('Ingen uppkoppling — kunde inte spara', 'error');
+  } else if (err?.message?.includes('401') || err?.message?.includes('403')) {
+    showToast('Behörighetsfel — kontrollera Firebase-nyckeln', 'error');
+  } else if (err?.message?.includes('404')) {
+    showToast('Dokumentet hittades inte', 'error');
+  } else if (err?.message?.includes('429')) {
+    showToast('För många förfrågningar — vänta en stund och försök igen', 'error');
+  } else {
+    showToast(`${context || 'Fel'}: ${err?.message || 'okänt fel'}`, 'error');
+  }
+  console.error(context, err);
+}

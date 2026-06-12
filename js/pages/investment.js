@@ -429,7 +429,7 @@ async function updateTxn(id) {
     closeModal();
     await renderEkonomi();
   } catch(err) {
-    showToast('Uppdatering misslyckades: ' + err.message, 'error');
+    handleFsError(err, 'Uppdatering misslyckades');
   }
 }
 
@@ -454,7 +454,7 @@ async function saveTxn() {
     closeModal();
     await renderEkonomi();
   } catch(err) {
-    showToast('Sparningen misslyckades: ' + err.message, 'error');
+    handleFsError(err, 'Sparningen misslyckades');
   }
 }
 

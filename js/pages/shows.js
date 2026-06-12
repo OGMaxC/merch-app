@@ -122,7 +122,7 @@ async function saveShow(id) {
     closeModal();
     await renderSpelningar();
   } catch(err) {
-    showToast('Sparningen misslyckades: ' + err.message, 'error');
+    handleFsError(err, 'Sparningen misslyckades');
   }
 }
 
@@ -614,7 +614,7 @@ async function _doReconcile(id) {
     showToast(`Spelning avslutad — ${fmt(newTotal)} loggad`);
     navigate('/shows');
   } catch(err) {
-    showToast('Avslutning misslyckades: ' + err.message, 'error');
+    handleFsError(err, 'Avslutning misslyckades');
   }
 }
 
@@ -671,7 +671,7 @@ async function resetShowStock(id) {
     showToast('Lager återställt');
     navigate('/shows');
   } catch(err) {
-    showToast('Återställning misslyckades: ' + err.message, 'error');
+    handleFsError(err, 'Återställning misslyckades');
   }
 }
 

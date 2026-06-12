@@ -10,6 +10,21 @@ const FIREBASE_CONFIG = {
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
 const FS_KEY  = `?key=${FIREBASE_CONFIG.apiKey}`;
 
+/* Wrap fetch with a timeout so the app doesn't hang on bad connectivity */
+async function fsFetch(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fsFetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') throw new Error('Förfrågan tog för lång tid — kontrollera uppkopplingen');
+    throw err;
+  }
+}
+
 /* ── SERIALISE ── */
 function fsVal(val) {
   if (val === null || val === undefined) return { nullValue: null };
@@ -68,7 +83,7 @@ async function fsSet(collection, id, data) {
   const fields = fsSerialise(data);
   const fieldPaths = Object.keys(fields).map(f => `updateMask.fieldPaths=${encodeURIComponent(f)}`).join('&');
   const url = `${FS_BASE}/${collection}/${id}${FS_KEY}&${fieldPaths}`;
-  const res = await fetch(url, {
+  const res = await fsFetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields })
@@ -111,7 +126,7 @@ async function fsQuery(collection, filters = []) {
       }))}
     };
   }
-  const res = await fetch(url, {
+  const res = await fsFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(query)
