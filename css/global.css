@@ -545,8 +545,23 @@ tr:hover td { background: var(--bg3); }
   .field-row-3 {
     grid-template-columns: 1fr;
   }
-  table th:nth-child(n+4),
-  table td:nth-child(n+4) {
+  /* Hide pie charts on mobile — text summaries are enough */
+  .pie-charts-row {
+    display: none;
+  }
+  /* Smaller stat values so they don't overflow their cards */
+  .stat-value {
+    font-size: 1.1rem;
+  }
+  /* Transaction table: hide middle columns, keep datum + belopp + actions */
+  .txn-table th:nth-child(2),
+  .txn-table td:nth-child(2),
+  .txn-table th:nth-child(3),
+  .txn-table td:nth-child(3),
+  .txn-table th:nth-child(4),
+  .txn-table td:nth-child(4),
+  .txn-table th:nth-child(5),
+  .txn-table td:nth-child(5) {
     display: none;
   }
   .mobile-nav {
@@ -577,3 +592,4 @@ tr:hover td { background: var(--bg3); }
     min-width: 34px;
   }
 }
+

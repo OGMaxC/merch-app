@@ -127,7 +127,7 @@ async function renderEkonomi() {
 
     el.innerHTML = `
       <!-- PIE CHARTS -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+      <div class="pie-charts-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
         <div class="card"><div class="card-body">
           <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">Per person</div>
           ${renderPie(personPie, totalUt)}
@@ -181,9 +181,9 @@ async function renderEkonomi() {
         <div class="card">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Datum</th><th>Person</th><th>Kategori</th><th>Projekt</th>
+              <thead class="txn-table"><tr><th>Datum</th><th>Person</th><th>Kategori</th><th>Projekt</th>
                 <th>Beskrivning</th><th style="text-align:right">Belopp</th><th></th></tr></thead>
-              <tbody>
+              <tbody class="txn-table">
                 ${txns.length
                   ? [...txns].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(t=>`<tr>
                       <td style="color:var(--text2);font-size:12px">${fmtShortDate(t.date)}</td>
