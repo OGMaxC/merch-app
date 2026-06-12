@@ -587,7 +587,7 @@ async function _doReconcile(id) {
       await fsAdd('merch_transactions', {
         type: 'sale', amount: newTotal, date: now(),
         showId: id, showNamn: show.name, notes,
-        person: 'All'
+        person: 'Skatbo'
       });
     }
 
