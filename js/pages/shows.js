@@ -162,12 +162,21 @@ async function openShowDetail(id) {
   restoreTallyUI();
 }
 
+const CATEGORY_ORDER = { clothing: 0, records: 1 };
+function categoryRank(item) {
+  const cat = (item.category || '').toLowerCase();
+  return CATEGORY_ORDER[cat] ?? 2;
+}
+function sortByCategory(items) {
+  return [...items].sort((a, b) => categoryRank(a) - categoryRank(b));
+}
+
 function renderShowDetail(show, allItems, container) {
   const pack = show.pack || [];
-  const packedItems = pack.map(p => {
+  const packedItems = sortByCategory(pack.map(p => {
     const item = allItems.find(i => i.id === p.itemId);
     return item ? { ...item, packQty: p.qty, packVariants: p.variants || {} } : null;
-  }).filter(Boolean);
+  }).filter(Boolean));
 
   const sales    = show.sales || [];
   const earnedTotal = sales.reduce((s, x) => s + (x.amount || 0), 0);
@@ -382,7 +391,7 @@ function toggleTallyBlock(id) {
   const el = document.getElementById(`tally-sizes-${id}`);
   const ch = document.getElementById(`chevron-${id}`);
   if (!el) return;
-  const isOpen = el.style.paddingBottom !== '0px';
+  const isOpen = el.style.display !== 'none';
   el.style.display = isOpen ? 'none' : 'grid';
   if (ch) ch.style.transform = isOpen ? 'rotate(-90deg)' : '';
 }
@@ -669,7 +678,7 @@ async function resetShowStock(id) {
 /* ── PACK EDITOR ── */
 async function openPackRedigeraor(showId) {
   const [show, items] = await Promise.all([fsGet('merch_shows', showId), fsGetAll('merch_items')]);
-  const active = items.filter(i => i.status === 'active' && (i.totalStock||0) > 0);
+  const active = sortByCategory(items.filter(i => i.status === 'active' && (i.totalStock||0) > 0));
   const pack   = show.pack || [];
 
   const rows = active.map(item => {
