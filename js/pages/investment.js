@@ -172,6 +172,32 @@ async function renderEkonomi() {
         ${personRows || '<div style="color:var(--text3);padding:12px">Inga transaktioner ännu</div>'}
       </div>
 
+      <!-- BAR CHART -->
+      <div class="section bar-chart-section" style="margin-bottom:24px">
+        <div class="section-header">
+          <div class="section-title">Betalningar per månad</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="chart-person" onchange="rebuildChart()" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+              <option value="">Alla personer</option>
+              ${PERSONS.map(p=>`<option value="${p}">${p}</option>`).join('')}
+              <option value="Alla">Alla (delad)</option>
+            </select>
+            <select id="chart-project" onchange="rebuildChart()" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+              <option value="">Alla projekt</option>
+              ${allProjects.map(p=>`<option value="${p}">${p}</option>`).join('')}
+            </select>
+            <select id="chart-year" onchange="rebuildChart()" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+              <option value="">Alla år</option>
+              ${[...new Set(txns.map(t=>t.date?.slice(0,4)).filter(Boolean))].sort().reverse()
+                .map(y=>`<option value="${y}">${y}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="card"><div class="card-body" style="overflow-x:auto">
+          <div id="bar-chart-container">${renderBarChart(txns, '', '', '')}</div>
+        </div></div>
+      </div>
+
       <!-- ALL TRANSACTIONS -->
       <div class="section">
         <div class="section-header">
@@ -437,6 +463,120 @@ async function deleteTxn(id) {
     await fsDelete('merch_transactions', id);
     showToast('Transaktion borttagen');
     await renderEkonomi();
+  });
+}
+
+/* ── BAR CHART ── */
+function renderBarChart(txns, filterPerson, filterProject, filterYear) {
+  // Filter
+  let filtered = txns;
+  if (filterPerson)  filtered = filtered.filter(t => t.person  === filterPerson);
+  if (filterProject) filtered = filtered.filter(t => t.project === filterProject);
+  if (filterYear)    filtered = filtered.filter(t => (t.date||'').startsWith(filterYear));
+
+  if (!filtered.length) {
+    return `<div style="color:var(--text3);font-size:12px;padding:20px;text-align:center">Ingen data för valt filter</div>`;
+  }
+
+  // Build month buckets
+  const buckets = {};
+  for (const t of filtered) {
+    const month = (t.date||'').slice(0, 7); // "YYYY-MM"
+    if (!month) continue;
+    if (!buckets[month]) buckets[month] = { ut: 0, in: 0 };
+    if (t.direction === 'ut') buckets[month].ut += (t.amount || 0);
+    else                       buckets[month].in += (t.amount || 0);
+  }
+
+  const months  = Object.keys(buckets).sort();
+  if (!months.length) return `<div style="color:var(--text3);font-size:12px;padding:20px;text-align:center">Ingen data</div>`;
+
+  const maxVal  = Math.max(...months.map(m => Math.max(buckets[m].ut, buckets[m].in)), 1);
+  const barW    = 18;
+  const gap     = 6;
+  const pairGap = 20;
+  const chartH  = 160;
+  const labelH  = 32;
+  const paddingL = 52;
+  const paddingR = 12;
+  const totalW  = paddingL + months.length * (barW * 2 + gap + pairGap) - pairGap + paddingR;
+  const svgW    = Math.max(totalW, 400);
+
+  // Y-axis grid lines (4 lines)
+  const gridLines = [0.25, 0.5, 0.75, 1].map(frac => {
+    const y = chartH - frac * chartH;
+    const val = frac * maxVal;
+    const label = val >= 1000 ? `${Math.round(val/1000)}k` : Math.round(val);
+    return `
+      <line x1="${paddingL}" y1="${y}" x2="${svgW - paddingR}" y2="${y}"
+            stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="${paddingL - 6}" y="${y + 4}" text-anchor="end"
+            fill="var(--text3)" font-size="9">${label}</text>`;
+  }).join('');
+
+  // Bars
+  const bars = months.map((month, i) => {
+    const x     = paddingL + i * (barW * 2 + gap + pairGap);
+    const d     = buckets[month];
+    const hUt   = d.ut > 0 ? Math.max(2, (d.ut / maxVal) * chartH) : 0;
+    const hIn   = d.in > 0 ? Math.max(2, (d.in / maxVal) * chartH) : 0;
+    const yUt   = chartH - hUt;
+    const yIn   = chartH - hIn;
+
+    // Month label — short Swedish month names
+    const [yr, mo] = month.split('-');
+    const monthNames = ['','jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+    const label = filterYear ? monthNames[parseInt(mo)] : `${monthNames[parseInt(mo)]} ${yr.slice(2)}`;
+
+    const tooltip_ut = d.ut > 0 ? `<title>${month}: Ut ${fmt(d.ut)}</title>` : '';
+    const tooltip_in = d.in > 0 ? `<title>${month}: In ${fmt(d.in)}</title>` : '';
+
+    return `
+      <rect x="${x}" y="${yUt}" width="${barW}" height="${hUt}"
+            fill="var(--red,#c0392b)" opacity="0.85" rx="2">${tooltip_ut}</rect>
+      <rect x="${x + barW + gap}" y="${yIn}" width="${barW}" height="${hIn}"
+            fill="var(--green,#27ae60)" opacity="0.85" rx="2">${tooltip_in}</rect>
+      <text x="${x + barW + gap/2}" y="${chartH + 14}" text-anchor="middle"
+            fill="var(--text3)" font-size="9">${label}</text>`;
+  }).join('');
+
+  // Legend
+  const legend = `
+    <div style="display:flex;gap:16px;justify-content:flex-end;margin-bottom:8px;font-size:11px">
+      <span style="display:flex;align-items:center;gap:5px">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--red,#c0392b);display:inline-block"></span>
+        Utgifter
+      </span>
+      <span style="display:flex;align-items:center;gap:5px">
+        <span style="width:10px;height:10px;border-radius:2px;background:var(--green,#27ae60);display:inline-block"></span>
+        Intäkter
+      </span>
+    </div>`;
+
+  return legend + `
+    <svg width="${svgW}" height="${chartH + labelH}"
+         viewBox="0 0 ${svgW} ${chartH + labelH}"
+         xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:${svgW}px">
+      ${gridLines}
+      <line x1="${paddingL}" y1="0" x2="${paddingL}" y2="${chartH}"
+            stroke="var(--border)" stroke-width="1"/>
+      <line x1="${paddingL}" y1="${chartH}" x2="${svgW - paddingR}" y2="${chartH}"
+            stroke="var(--border)" stroke-width="1"/>
+      ${bars}
+    </svg>`;
+}
+
+function rebuildChart() {
+  const person  = document.getElementById('chart-person')?.value  || '';
+  const project = document.getElementById('chart-project')?.value || '';
+  const year    = document.getElementById('chart-year')?.value    || '';
+  const el      = document.getElementById('bar-chart-container');
+  if (!el) return;
+
+  // Re-read txns from the rendered page's cached data
+  fsGetAll('merch_transactions').then(raw => {
+    const txns = raw.map(normalizeTxn);
+    el.innerHTML = renderBarChart(txns, person, project, year);
   });
 }
 

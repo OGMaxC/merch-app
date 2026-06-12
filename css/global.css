@@ -549,6 +549,10 @@ tr:hover td { background: var(--bg3); }
   .pie-charts-row {
     display: none !important;
   }
+  /* Hide bar chart on mobile */
+  .bar-chart-section {
+    display: none !important;
+  }
   /* Smaller stat values so they don't overflow their cards */
   .stat-value {
     font-size: 1.1rem;
@@ -592,3 +596,4 @@ tr:hover td { background: var(--bg3); }
     min-width: 34px;
   }
 }
+
