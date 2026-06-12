@@ -65,11 +65,13 @@ async function fsGet(collection, id) {
 
 /* ── SET (create or overwrite) ── */
 async function fsSet(collection, id, data) {
-  const url = `${FS_BASE}/${collection}/${id}${FS_KEY}`;
+  const fields = fsSerialise(data);
+  const fieldPaths = Object.keys(fields).map(f => `updateMask.fieldPaths=${encodeURIComponent(f)}`).join('&');
+  const url = `${FS_BASE}/${collection}/${id}${FS_KEY}&${fieldPaths}`;
   const res = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields: fsSerialise(data) })
+    body: JSON.stringify({ fields })
   });
   if (!res.ok) throw new Error(`Firestore write failed: ${res.status}`);
   const doc = await res.json();
