@@ -184,7 +184,7 @@ function renderShowDetail(show, allItems, container) {
         <div class="page-sub">${fmtDate(show.date)} · ${show.venue||''} · ${show.city||''}</div>
       </div>
       <div style="display:flex;gap:8px">
-        ${show.status==='upcoming' ? `<button class="btn btn-ghost btn-sm" onclick="showPrintSheet()">Skriv ut ark</button>` : ''}
+        ${show.status==='upcoming' ? `<button class="btn btn-ghost btn-sm" onclick="showPrintSheet()">Skriv ut packlista</button>` : ''}
         ${show.status==='complete' ? `<button class="btn btn-danger btn-sm" onclick="confirmResetShowStock('${show.id}')">Återställ lager</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openPackRedigeraor('${show.id}')">Redigera pack</button>
         <button class="btn btn-ghost btn-sm" onclick="navigate('/shows')">Tillbaka</button>
@@ -210,21 +210,21 @@ function renderShowDetail(show, allItems, container) {
             <div style="font-size:24px;font-weight:500;color:var(--gold)" id="tally-cash-big">${fmt(earnedTotal)}</div>
           </div>
           <div style="text-align:right">
-            <div class="stat-label">Potential if sålda out</div>
-            <div style="font-size:14px;color:var(--text2);margin-top:3px">${fmt(packedItems.reduce((s,i)=>s+(i.packQty||0)*(i.salePris||0),0))}</div>
+            <div class="stat-label">Potential om slutsålt</div>
+            <div style="font-size:14px;color:var(--text2);margin-top:3px">${fmt(packedItems.reduce((s,i)=>s+(i.packQty||0)*(i.salePrice||0),0))}</div>
           </div>
         </div>
       </div>
       <div class="card" style="margin-top:10px">
         <div class="card-body">
-          <div class="field"><label>Anteckningar</label><input type="text" id="show-notes" value="${show.notes||''}" placeholder="Freebies, issues, anything odd…"/></div>
+          <div class="field"><label>Anteckningar</label><input type="text" id="show-notes" value="${show.notes||''}" placeholder="Gratisexemplar, noter, övrigt…"/></div>
           <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
             <span id="tally-save-indicator" style="font-size:0.7rem;color:var(--text3)">
               ${Object.keys(window._tallySales).length > 0 ? 'Återställd från senaste session' : 'Sparas automatiskt vid varje tryck'}
             </span>
             <div style="display:flex;gap:8px">
               <button class="btn btn-ghost" onclick="navigate('/shows')">Tillbaka</button>
-              <button class="btn btn-primary" onclick="reconcileShow('${show.id}')">Stäng show</button>
+              <button class="btn btn-primary" onclick="reconcileShow('${show.id}')">Stäng spelning</button>
             </div>
           </div>
         </div>
@@ -446,7 +446,7 @@ function tallyLocalSave() {
   localStorage.setItem(key, JSON.stringify(window._tallySales));
   const el = document.getElementById('tally-save-indicator');
   if (el) {
-    el.textContent = 'Saved ' + new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    el.textContent = 'Sparat ' + new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     el.style.color = 'var(--green)';
   }
 }
