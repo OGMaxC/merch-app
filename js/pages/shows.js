@@ -249,7 +249,9 @@ function tallyBlock(item, show) {
         }).map(sz => {
           const v   = varStocks[sz] || { stock: 0, sålda: 0 };
           const originalQty = (v.stock || 0) + (v.sålda || 0);
-          const packRem = originalQty;
+          // Use per-variant pack quantity if set, otherwise fall back to originalQty
+          const packVariantQty = item.packVariants?.[color]?.[sz];
+          const packRem = packVariantQty !== undefined ? packVariantQty : originalQty;
           return `<div class="size-row" id="sr-${item.id}-${color}-${sz}"
             style="display:grid;grid-template-columns:52px 1fr auto;align-items:center;
             background:var(--bg3);border-radius:8px;border:1px solid var(--border);
@@ -327,7 +329,12 @@ function restoreTallyUI() {
     // After reconcile, inventory stock has already been decremented, so
     // using it would give wrong (or negative) remainders for sold-out items.
     const packEntry = (window._currentShow?.pack || []).find(p => p.itemId === s.itemId);
-    const packMax = packEntry?.qty ?? s.qty;
+    const packMax = (() => {
+      if (!packEntry) return s.qty;
+      if (s.color === '_') return packEntry.qty ?? s.qty;
+      const perVariant = packEntry.variants?.[s.color]?.[s.sz];
+      return perVariant !== undefined ? perVariant : (packEntry.qty ?? s.qty);
+    })();
     const rem = Math.max(0, packMax - s.qty);
 
     // Update sold counter
@@ -393,11 +400,14 @@ function tallyAdj(itemId, color, sz, delta, price) {
   // originalQty = stock + sålda reconstructs pre-reconcile pack quantity.
   // Using v.stock alone would be 0 for sold-out items after reconcile.
   const originalQty = (v.stock || 0) + (v.sålda || 0);
-  // For non-clothing items the pack has a single qty; use that when available.
   const packMax = (() => {
-    const show = window._currentShow;
+    const show      = window._currentShow;
     const packEntry = (show?.pack || []).find(p => p.itemId === itemId);
-    return (color === '_') ? (packEntry?.qty ?? originalQty) : originalQty;
+    if (!packEntry) return originalQty;
+    if (color === '_') return packEntry.qty ?? originalQty;
+    // For clothing, use per-variant pack qty if recorded, else fall back
+    const perVariant = packEntry.variants?.[color]?.[sz];
+    return perVariant !== undefined ? perVariant : originalQty;
   })();
   const max = packMax;
 
@@ -662,21 +672,59 @@ async function openPackRedigeraor(showId) {
   const active = items.filter(i => i.status === 'active' && (i.totalStock||0) > 0);
   const pack   = show.pack || [];
 
-  openModal('Bygg spelningspack',
-    `<div style="display:grid;gap:10px">
-      ${active.map(item => {
-        const packEntry = pack.find(p => p.itemId === item.id);
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:6px">
-          <div>
-            <div style="font-size:13px;font-weight:500">${item.name}</div>
-            <div style="font-size:11px;color:var(--text2)">${catBadge(item.category)} ${fmtNum(item.totalStock||0)} i lager</div>
-          </div>
-          <input type="number" id="pack-${item.id}" min="0" max="${item.totalStock||0}"
-            value="${packEntry?.qty||0}" placeholder="0"
-            style="width:70px;padding:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:4px;text-align:center"/>
+  const rows = active.map(item => {
+    const packEntry  = pack.find(p => p.itemId === item.id);
+    const isClothing = item.category === 'clothing';
+
+    if (isClothing) {
+      const colors = item.colors || Object.keys(item.variants || {}).filter(c => c !== '_');
+      const colorRows = colors.map(color => {
+        const varStocks = item.variants?.[color] || {};
+        const activeSizes = ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0);
+        if (!activeSizes.length) return '';
+        const sizeInputs = activeSizes.map(sz => {
+          const inStock  = varStocks[sz]?.stock || 0;
+          const packQty  = packEntry?.variants?.[color]?.[sz] || 0;
+          return `<div style="display:flex;align-items:center;gap:6px;font-size:12px">
+            <span style="color:var(--text2);width:28px">${sz}</span>
+            <span style="color:var(--text3);font-size:11px;width:60px">${inStock} i lager</span>
+            <input type="number" id="pack-${item.id}-${color}-${sz}"
+              min="0" max="${inStock}" value="${packQty}" placeholder="0"
+              style="width:60px;padding:5px;background:var(--bg2);border:1px solid var(--border);
+                     color:var(--text);border-radius:4px;text-align:center;font-size:12px"/>
+          </div>`;
+        }).join('');
+        return `<div style="margin-top:6px;padding:8px;background:var(--bg2);border-radius:4px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">${color}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">${sizeInputs}</div>
         </div>`;
-      }).join('')}
-    </div>`,
+      }).join('');
+
+      return `<div style="padding:10px;background:var(--bg3);border-radius:6px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:500">${item.name}</div>
+          <div style="font-size:11px;color:var(--text2)">${catBadge(item.category)} ${fmtNum(item.totalStock||0)} i lager</div>
+        </div>
+        ${colorRows}
+      </div>`;
+    } else {
+      const inStock = item.variants?.['_']?.stock || 0;
+      const packQty = packEntry?.qty || 0;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:6px">
+        <div>
+          <div style="font-size:13px;font-weight:500">${item.name}</div>
+          <div style="font-size:11px;color:var(--text2)">${catBadge(item.category)} ${fmtNum(inStock)} i lager</div>
+        </div>
+        <input type="number" id="pack-${item.id}"
+          min="0" max="${inStock}" value="${packQty}" placeholder="0"
+          style="width:70px;padding:6px;background:var(--bg2);border:1px solid var(--border);
+                 color:var(--text);border-radius:4px;text-align:center"/>
+      </div>`;
+    }
+  }).join('');
+
+  openModal('Bygg spelningspack',
+    `<div style="display:grid;gap:10px">${rows}</div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
      <button class="btn btn-primary" onclick="savePack('${showId}')">Spara pack</button>`
   );
@@ -685,9 +733,31 @@ async function openPackRedigeraor(showId) {
 async function savePack(showId) {
   const show  = await fsGet('merch_shows', showId);
   const items = await fsGetAll('merch_items');
-  const pack  = items.map(item => {
-    const qty = parseInt(document.getElementById(`pack-${item.id}`)?.value) || 0;
-    return qty > 0 ? { itemId: item.id, qty } : null;
+
+  const pack = items.map(item => {
+    const isClothing = item.category === 'clothing';
+
+    if (isClothing) {
+      const colors = item.colors || Object.keys(item.variants || {}).filter(c => c !== '_');
+      const variants = {};
+      let totalQty = 0;
+      for (const color of colors) {
+        const varStocks = item.variants?.[color] || {};
+        const activeSizes = ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0);
+        for (const sz of activeSizes) {
+          const qty = parseInt(document.getElementById(`pack-${item.id}-${color}-${sz}`)?.value) || 0;
+          if (qty > 0) {
+            if (!variants[color]) variants[color] = {};
+            variants[color][sz] = qty;
+            totalQty += qty;
+          }
+        }
+      }
+      return totalQty > 0 ? { itemId: item.id, qty: totalQty, variants } : null;
+    } else {
+      const qty = parseInt(document.getElementById(`pack-${item.id}`)?.value) || 0;
+      return qty > 0 ? { itemId: item.id, qty } : null;
+    }
   }).filter(Boolean);
 
   await fsSet('merch_shows', showId, { ...show, pack });
