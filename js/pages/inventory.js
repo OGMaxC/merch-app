@@ -99,11 +99,7 @@ async function renderLager() {
         </div>
       </div>` : '';
 
-    if (shortageHTML && !cat) {
-      el.innerHTML = shortageHTML;
-    } else {
-      el.innerHTML = '';
-    }
+    el.innerHTML = '';
     // ── end shortage section ───────────────────────────────────────────────
     if (cat) items = items.filter(i => i.category === cat);
     items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -113,7 +109,8 @@ async function renderLager() {
       return;
     }
 
-    el.innerHTML = `<div class="card"><div class="table-wrap"><table>
+    if (shortageHTML && !cat) el.innerHTML += shortageHTML;
+    el.innerHTML += `<div class="card"><div class="table-wrap"><table>
       <thead><tr>
         <th style="width:35%">Artikel</th>
         <th>Kategori</th>
