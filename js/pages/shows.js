@@ -757,8 +757,8 @@ async function openPackRedigeraor(showId) {
           </div>`;
         }).join('');
         return `<div style="margin-top:6px;padding:8px;background:var(--bg2);border-radius:4px;border:1px solid var(--border)">
-          <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">${color}</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">${sizeInputs}</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:500">${color}</div>
+          <div style="display:flex;flex-direction:column;gap:6px">${sizeInputs}</div>
         </div>`;
       }).join('');
 
