@@ -66,7 +66,7 @@ function colorDot(c) {
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 /* ── PERSONS ── */
-const PERSONS = ['Max', 'Daniel', 'Victor', 'Skatbo'];
+const PERSONS = ['Max', 'Daniel', 'Victor', 'Skatbo', 'Alla'];
 
 /* ── EMPTY STATE ── */
 function emptyState(icon, msg, action = '') {

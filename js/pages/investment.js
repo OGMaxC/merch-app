@@ -183,7 +183,6 @@ async function renderEkonomi() {
             <select id="chart-person" onchange="rebuildChart()" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
               <option value="">Alla personer</option>
               ${PERSONS.map(p=>`<option value="${p}">${p}</option>`).join('')}
-              <option value="Alla">Alla (delad)</option>
             </select>
             <select id="chart-project" onchange="rebuildChart()" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text)">
               <option value="">Alla projekt</option>
@@ -329,7 +328,6 @@ function openLogTxn() {
       <div class="field"><label>Person</label>
         <select id="txn-person">
           ${PERSONS.map(p=>`<option value="${p}">${p}</option>`).join('')}
-          <option value="Alla">Alla</option>
         </select>
       </div>
     </div>
@@ -379,7 +377,6 @@ async function openEditTxn(id) {
       <div class="field"><label>Person</label>
         <select id="txn-person">
           ${PERSONS.map(p=>`<option value="${p}" ${t.person===p?'selected':''}>${p}</option>`).join('')}
-          <option value="Alla" ${t.person==='Alla'?'selected':''}>Alla</option>
         </select>
       </div>
     </div>
