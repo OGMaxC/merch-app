@@ -675,32 +675,86 @@ async function resetShowStock(id) {
   }
 }
 
+/* ── RESERVATION HELPER ── */
+// Returns a map of reserved quantities across all upcoming shows EXCEPT the current one.
+// Structure: { itemId: { '_': qty } } for non-clothing, { itemId: { color: { sz: qty } } } for clothing
+async function getReservedQty(excludeShowId) {
+  const shows    = await fsGetAll('merch_shows');
+  const upcoming = shows.filter(s => s.status === 'upcoming' && s.id !== excludeShowId);
+  const reserved = {};
+
+  for (const show of upcoming) {
+    for (const p of (show.pack || [])) {
+      if (!reserved[p.itemId]) reserved[p.itemId] = {};
+      if (p.variants && Object.keys(p.variants).length) {
+        // clothing with per-variant pack
+        for (const [color, sizes] of Object.entries(p.variants)) {
+          if (!reserved[p.itemId][color]) reserved[p.itemId][color] = {};
+          for (const [sz, qty] of Object.entries(sizes)) {
+            reserved[p.itemId][color][sz] = (reserved[p.itemId][color][sz] || 0) + qty;
+          }
+        }
+      } else {
+        // non-clothing or old-style pack without variants
+        reserved[p.itemId]['_'] = (reserved[p.itemId]['_'] || 0) + (p.qty || 0);
+      }
+    }
+  }
+  return reserved;
+}
+
 /* ── PACK EDITOR ── */
 async function openPackRedigeraor(showId) {
-  const [show, items] = await Promise.all([fsGet('merch_shows', showId), fsGetAll('merch_items')]);
-  const active = sortByCategory(items.filter(i => i.status === 'active' && (i.totalStock||0) > 0));
+  const [show, items, reserved] = await Promise.all([
+    fsGet('merch_shows', showId),
+    fsGetAll('merch_items'),
+    getReservedQty(showId),
+  ]);
+  const active = sortByCategory(items.filter(i => i.status === 'active'));
   const pack   = show.pack || [];
+
+  function availInfo(inStock, reservedQty, packQty) {
+    const available = inStock - reservedQty;
+    const shortage  = packQty - available;
+    const availCol  = available <= 0 ? 'var(--red)' : available < 3 ? 'var(--amber)' : 'var(--text3)';
+    let html = `<span style="color:${availCol};font-size:11px">
+      ${fmtNum(inStock)} i lager · ${reservedQty > 0 ? fmtNum(reservedQty)+' res · ' : ''}${fmtNum(Math.max(0,available))} ledig
+    </span>`;
+    if (shortage > 0) html += `<span style="color:var(--red);font-size:11px;font-weight:500;margin-left:4px">⚠ ${fmtNum(shortage)} saknas</span>`;
+    return html;
+  }
 
   const rows = active.map(item => {
     const packEntry  = pack.find(p => p.itemId === item.id);
     const isClothing = item.category === 'clothing';
+    const itemRes    = reserved[item.id] || {};
 
     if (isClothing) {
       const colors = item.colors || Object.keys(item.variants || {}).filter(c => c !== '_');
       const colorRows = colors.map(color => {
-        const varStocks = item.variants?.[color] || {};
-        const activeSizes = ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0);
+        const varStocks   = item.variants?.[color] || {};
+        const activeSizes = ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0 || (packEntry?.variants?.[color]?.[sz] || 0) > 0);
         if (!activeSizes.length) return '';
         const sizeInputs = activeSizes.map(sz => {
-          const inStock  = varStocks[sz]?.stock || 0;
-          const packQty  = packEntry?.variants?.[color]?.[sz] || 0;
+          const inStock    = varStocks[sz]?.stock || 0;
+          const resQty     = itemRes[color]?.[sz] || 0;
+          const packQty    = packEntry?.variants?.[color]?.[sz] || 0;
+          const available  = inStock - resQty;
+          const shortage   = packQty > available ? packQty - available : 0;
+          const borderCol  = shortage > 0 ? '1px solid var(--red)' : '1px solid var(--border)';
           return `<div style="display:flex;align-items:center;gap:6px;font-size:12px">
             <span style="color:var(--text2);width:28px">${sz}</span>
-            <span style="color:var(--text3);font-size:11px;width:60px">${inStock} i lager</span>
-            <input type="number" id="pack-${item.id}-${color}-${sz}"
-              min="0" max="${inStock}" value="${packQty}" placeholder="0"
-              style="width:60px;padding:5px;background:var(--bg2);border:1px solid var(--border);
-                     color:var(--text);border-radius:4px;text-align:center;font-size:12px"/>
+            <div style="font-size:10px;line-height:1.4;min-width:100px">
+              ${availInfo(inStock, resQty, packQty)}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <input type="number" id="pack-${item.id}-${color}-${sz}"
+                min="0" value="${packQty}" placeholder="0"
+                oninput="liveCheckShortage('${item.id}','${color}','${sz}',${inStock},${resQty})"
+                style="width:60px;padding:5px;background:var(--bg2);border:${borderCol};
+                       color:var(--text);border-radius:4px;text-align:center;font-size:12px"/>
+              ${shortage > 0 ? `<span id="short-${item.id}-${color}-${sz}" style="font-size:10px;color:var(--red)">−${fmtNum(shortage)}</span>` : `<span id="short-${item.id}-${color}-${sz}" style="font-size:10px;color:var(--red);display:none"></span>`}
+            </div>
           </div>`;
         }).join('');
         return `<div style="margin-top:6px;padding:8px;background:var(--bg2);border-radius:4px;border:1px solid var(--border)">
@@ -712,31 +766,65 @@ async function openPackRedigeraor(showId) {
       return `<div style="padding:10px;background:var(--bg3);border-radius:6px">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
           <div style="font-size:13px;font-weight:500">${item.name}</div>
-          <div style="font-size:11px;color:var(--text2)">${catBadge(item.category)} ${fmtNum(item.totalStock||0)} i lager</div>
+          <div style="font-size:11px;color:var(--text2)">${catBadge(item.category)}</div>
         </div>
         ${colorRows}
       </div>`;
     } else {
-      const inStock = item.variants?.['_']?.stock || 0;
-      const packQty = packEntry?.qty || 0;
+      const inStock   = item.variants?.['_']?.stock || 0;
+      const resQty    = itemRes['_'] || 0;
+      const packQty   = packEntry?.qty || 0;
+      const available = inStock - resQty;
+      const shortage  = packQty > available ? packQty - available : 0;
+      const borderCol = shortage > 0 ? '1px solid var(--red)' : '1px solid var(--border)';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg3);border-radius:6px">
         <div>
           <div style="font-size:13px;font-weight:500">${item.name}</div>
-          <div style="font-size:11px;color:var(--text2)">${catBadge(item.category)} ${fmtNum(inStock)} i lager</div>
+          <div style="margin-top:2px">${availInfo(inStock, resQty, packQty)}</div>
         </div>
-        <input type="number" id="pack-${item.id}"
-          min="0" max="${inStock}" value="${packQty}" placeholder="0"
-          style="width:70px;padding:6px;background:var(--bg2);border:1px solid var(--border);
-                 color:var(--text);border-radius:4px;text-align:center"/>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+          <input type="number" id="pack-${item.id}"
+            min="0" value="${packQty}" placeholder="0"
+            oninput="liveCheckShortageSimple('${item.id}',${inStock},${resQty})"
+            style="width:70px;padding:6px;background:var(--bg2);border:${borderCol};
+                   color:var(--text);border-radius:4px;text-align:center"/>
+          ${shortage > 0 ? `<span id="short-${item.id}" style="font-size:10px;color:var(--red)">−${fmtNum(shortage)}</span>` : `<span id="short-${item.id}" style="font-size:10px;color:var(--red);display:none"></span>`}
+        </div>
       </div>`;
     }
   }).join('');
 
   openModal('Bygg spelningspack',
-    `<div style="display:grid;gap:10px">${rows}</div>`,
+    `<div style="margin-bottom:10px;font-size:11px;color:var(--text3)">
+      <span style="color:var(--amber)">Reserverat</span> = packat i andra kommande spelningar.
+      Du kan packa mer än tillgängligt — <span style="color:var(--red)">röda siffror</span> visar vad som behöver beställas.
+    </div>
+    <div style="display:grid;gap:10px">${rows}</div>`,
     `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
      <button class="btn btn-primary" onclick="savePack('${showId}')">Spara pack</button>`
   );
+}
+
+function liveCheckShortage(itemId, color, sz, inStock, resQty) {
+  const input    = document.getElementById(`pack-${itemId}-${color}-${sz}`);
+  const shortEl  = document.getElementById(`short-${itemId}-${color}-${sz}`);
+  if (!input || !shortEl) return;
+  const packQty  = parseInt(input.value) || 0;
+  const shortage = packQty - (inStock - resQty);
+  input.style.borderColor = shortage > 0 ? 'var(--red)' : 'var(--border)';
+  shortEl.textContent     = shortage > 0 ? `−${fmtNum(shortage)} saknas` : '';
+  shortEl.style.display   = shortage > 0 ? 'inline' : 'none';
+}
+
+function liveCheckShortageSimple(itemId, inStock, resQty) {
+  const input   = document.getElementById(`pack-${itemId}`);
+  const shortEl = document.getElementById(`short-${itemId}`);
+  if (!input || !shortEl) return;
+  const packQty  = parseInt(input.value) || 0;
+  const shortage = packQty - (inStock - resQty);
+  input.style.borderColor = shortage > 0 ? 'var(--red)' : 'var(--border)';
+  shortEl.textContent     = shortage > 0 ? `−${fmtNum(shortage)} saknas` : '';
+  shortEl.style.display   = shortage > 0 ? 'inline' : 'none';
 }
 
 async function savePack(showId) {

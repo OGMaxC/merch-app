@@ -25,15 +25,91 @@ async function renderLager() {
   const cat = document.getElementById('inv-filter-cat')?.value || '';
   const el  = document.getElementById('inv-content');
   if (!el) return;
-  el.innerHTML = '<div style="color:var(--text3);padding:20px">Loading…</div>';
+  el.innerHTML = '<div style="color:var(--text3);padding:20px">Laddar…</div>';
 
   try {
     let items = await fsGetAll('merch_items');
+
+    // ── Behöver beställas ──────────────────────────────────────────────────
+    // Build shortage list from all upcoming shows
+    const allShows  = await fsGetAll('merch_shows');
+    const upcoming  = allShows.filter(s => s.status === 'upcoming');
+    const totalPack = {}; // itemId -> { color -> { sz -> qty } } or { '_' -> qty }
+
+    for (const show of upcoming) {
+      for (const p of (show.pack || [])) {
+        if (!totalPack[p.itemId]) totalPack[p.itemId] = {};
+        if (p.variants && Object.keys(p.variants).length) {
+          for (const [color, sizes] of Object.entries(p.variants)) {
+            if (!totalPack[p.itemId][color]) totalPack[p.itemId][color] = {};
+            for (const [sz, qty] of Object.entries(sizes)) {
+              totalPack[p.itemId][color][sz] = (totalPack[p.itemId][color][sz] || 0) + qty;
+            }
+          }
+        } else {
+          totalPack[p.itemId]['_'] = (totalPack[p.itemId]['_'] || 0) + (p.qty || 0);
+        }
+      }
+    }
+
+    const shortages = [];
+    for (const item of items) {
+      const pack = totalPack[item.id];
+      if (!pack) continue;
+      if (item.category === 'clothing') {
+        for (const [color, sizes] of Object.entries(pack)) {
+          for (const [sz, packedQty] of Object.entries(sizes)) {
+            const inStock  = item.variants?.[color]?.[sz]?.stock || 0;
+            const shortage = packedQty - inStock;
+            if (shortage > 0) shortages.push({ name: item.name, color, sz, inStock, packedQty, shortage });
+          }
+        }
+      } else {
+        const packedQty = pack['_'] || 0;
+        const inStock   = item.variants?.['_']?.stock || 0;
+        const shortage  = packedQty - inStock;
+        if (shortage > 0) shortages.push({ name: item.name, color: null, sz: null, inStock, packedQty, shortage });
+      }
+    }
+
+    const shortageHTML = shortages.length ? `
+      <div class="section" style="margin-bottom:24px">
+        <div class="section-header">
+          <div class="section-title" style="color:var(--red)">⚠ Behöver beställas</div>
+          <div style="font-size:12px;color:var(--text3)">${shortages.length} variant${shortages.length > 1 ? 'er' : ''} underpackad${shortages.length > 1 ? 'e' : ''}</div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr>
+              <th>Artikel</th><th>Variant</th>
+              <th style="text-align:center">I lager</th>
+              <th style="text-align:center">Packat totalt</th>
+              <th style="text-align:center;color:var(--red)">Saknas</th>
+            </tr></thead>
+            <tbody>
+              ${shortages.map(s => `<tr>
+                <td style="font-weight:500">${s.name}</td>
+                <td style="color:var(--text2);font-size:12px">${s.color ? `${s.color} / ${s.sz}` : '—'}</td>
+                <td style="text-align:center;color:var(--text2)">${s.inStock}</td>
+                <td style="text-align:center;color:var(--amber)">${s.packedQty}</td>
+                <td style="text-align:center;color:var(--red);font-weight:600">+${s.shortage}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table></div>
+        </div>
+      </div>` : '';
+
+    if (shortageHTML && !cat) {
+      el.innerHTML = shortageHTML;
+    } else {
+      el.innerHTML = '';
+    }
+    // ── end shortage section ───────────────────────────────────────────────
     if (cat) items = items.filter(i => i.category === cat);
     items.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
     if (!items.length) {
-      el.innerHTML = emptyState('📦', 'Inga artiklar ännu.', '<button class="btn btn-primary" onclick="openAddItem()" style="margin-top:12px">Lägg till din första artikel</button>');
+      el.innerHTML = shortageHTML + emptyState('📦', 'Inga artiklar ännu.', '<button class="btn btn-primary" onclick="openAddItem()" style="margin-top:12px">Lägg till din första artikel</button>');
       return;
     }
 
