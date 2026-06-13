@@ -741,18 +741,18 @@ async function openPackRedigeraor(showId) {
           const available  = inStock - resQty;
           const shortage   = packQty > available ? packQty - available : 0;
           const borderCol  = shortage > 0 ? '1px solid var(--red)' : '1px solid var(--border)';
-          return `<div style="display:flex;align-items:center;gap:6px;font-size:12px">
-            <span style="color:var(--text2);width:28px">${sz}</span>
-            <div style="font-size:10px;line-height:1.4;min-width:100px">
+          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:4px 0">
+            <span style="color:var(--text2);width:32px;flex-shrink:0">${sz}</span>
+            <div style="font-size:11px;line-height:1.5;flex:1">
               ${availInfo(inStock, resQty, packQty)}
             </div>
-            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0">
               <input type="number" id="pack-${item.id}-${color}-${sz}"
                 min="0" value="${packQty}" placeholder="0"
                 oninput="liveCheckShortage('${item.id}','${color}','${sz}',${inStock},${resQty})"
-                style="width:60px;padding:5px;background:var(--bg2);border:${borderCol};
-                       color:var(--text);border-radius:4px;text-align:center;font-size:12px"/>
-              ${shortage > 0 ? `<span id="short-${item.id}-${color}-${sz}" style="font-size:10px;color:var(--red)">−${fmtNum(shortage)}</span>` : `<span id="short-${item.id}-${color}-${sz}" style="font-size:10px;color:var(--red);display:none"></span>`}
+                style="width:72px;padding:6px;background:var(--bg2);border:${borderCol};
+                       color:var(--text);border-radius:4px;text-align:center;font-size:13px"/>
+              ${shortage > 0 ? `<span id="short-${item.id}-${color}-${sz}" style="font-size:11px;color:var(--red)">−${fmtNum(shortage)} saknas</span>` : `<span id="short-${item.id}-${color}-${sz}" style="font-size:11px;color:var(--red);display:none"></span>`}
             </div>
           </div>`;
         }).join('');
