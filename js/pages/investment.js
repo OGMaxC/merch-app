@@ -28,7 +28,6 @@ registerPage('investment', async (container) => {
   container.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Ekonomi</div></div>
-      <button class="btn btn-ghost btn-sm" onclick="openCompareProjects()">Jämför projekt</button>
       <button class="btn btn-primary btn-sm" onclick="openLogTxn()">+ Logga</button>
     </div>
     <div id="invest-content"></div>
@@ -138,7 +137,10 @@ async function renderEkonomi() {
           ${renderPie(catPie, totalUt)}
         </div></div>
         <div class="card"><div class="card-body">
-          <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:12px">Per projekt</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:12px;font-weight:500;color:var(--text2)">Per projekt</div>
+            <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" onclick="openCompareProjects()">Jämför projekt</button>
+          </div>
           ${renderPie(projPie, totalUt, true)}
         </div></div>
       </div>
@@ -596,7 +598,8 @@ async function openCompareProjects() {
   const selB = projects[1];
 
   openModal('Jämför projekt',
-    `<div style="display:flex;gap:10px;margin-bottom:16px">
+    `<style>#modal-overlay .modal { max-width: 680px; width: 95vw; }</style>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
       <div class="field" style="flex:1;margin:0">
         <label>Projekt A</label>
         <select id="cmp-a" onchange="refreshCompare()" style="width:100%">
