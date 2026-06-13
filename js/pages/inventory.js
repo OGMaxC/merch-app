@@ -72,30 +72,35 @@ async function renderLager() {
       }
     }
 
+    // Group shortages by item name
+    const shortageGroups = {};
+    for (const s of shortages) {
+      if (!shortageGroups[s.name]) shortageGroups[s.name] = [];
+      shortageGroups[s.name].push(s);
+    }
+
     const shortageHTML = shortages.length ? `
       <div class="section" style="margin-bottom:24px">
         <div class="section-header">
           <div class="section-title" style="color:var(--red)">⚠ Behöver beställas</div>
-          <div style="font-size:12px;color:var(--text3)">${shortages.length} variant${shortages.length > 1 ? 'er' : ''} underpackad${shortages.length > 1 ? 'e' : ''}</div>
+          <div style="font-size:12px;color:var(--text3)">${Object.keys(shortageGroups).length} artikel${Object.keys(shortageGroups).length > 1 ? 'ar' : ''}</div>
         </div>
         <div class="card">
-          <div class="table-wrap"><table>
-            <thead><tr>
-              <th>Artikel</th><th>Variant</th>
-              <th style="text-align:center">I lager</th>
-              <th style="text-align:center">Packat totalt</th>
-              <th style="text-align:center;color:var(--red)">Saknas</th>
-            </tr></thead>
-            <tbody>
-              ${shortages.map(s => `<tr>
-                <td style="font-weight:500">${s.name}</td>
-                <td style="color:var(--text2);font-size:12px">${s.color ? `${s.color} / ${s.sz}` : '—'}</td>
-                <td style="text-align:center;color:var(--text2)">${s.inStock}</td>
-                <td style="text-align:center;color:var(--amber)">${s.packedQty}</td>
-                <td style="text-align:center;color:var(--red);font-weight:600">+${s.shortage}</td>
-              </tr>`).join('')}
-            </tbody>
-          </table></div>
+          ${Object.entries(shortageGroups).map(([name, variants], i, arr) => `
+            <div style="padding:14px 18px;${i < arr.length-1 ? 'border-bottom:2px solid var(--border)' : ''}">
+              <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:10px">${name}</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                ${variants.map(s => `
+                  <div style="display:flex;justify-content:space-between;align-items:center;
+                       padding:6px 10px;background:var(--bg3);border-radius:6px;font-size:13px">
+                    <span style="color:var(--text2)">${s.color ? `${s.color} / ${s.sz}` : '—'}</span>
+                    <div style="display:flex;gap:16px;align-items:center">
+                      <span style="color:var(--text3);font-size:11px">${s.inStock} i lager · ${s.packedQty} packat</span>
+                      <span style="color:var(--red);font-weight:600;min-width:40px;text-align:right">+${s.shortage} saknas</span>
+                    </div>
+                  </div>`).join('')}
+              </div>
+            </div>`).join('')}
         </div>
       </div>` : '';
 
