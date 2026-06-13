@@ -733,8 +733,7 @@ async function openPackRedigeraor(showId) {
       const colors = item.colors || Object.keys(item.variants || {}).filter(c => c !== '_');
       const colorRows = colors.map(color => {
         const varStocks   = item.variants?.[color] || {};
-        const activeSizes = ALL_SIZES.filter(sz => (varStocks[sz]?.stock || 0) > 0 || (packEntry?.variants?.[color]?.[sz] || 0) > 0);
-        if (!activeSizes.length) return '';
+        const activeSizes = ALL_SIZES; // always show all sizes so you can overpack/plan orders
         const sizeInputs = activeSizes.map(sz => {
           const inStock    = varStocks[sz]?.stock || 0;
           const resQty     = itemRes[color]?.[sz] || 0;
