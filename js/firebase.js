@@ -15,7 +15,7 @@ async function fsFetch(url, options = {}, timeoutMs = 8000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fsFetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(timer);
     return res;
   } catch (err) {
@@ -61,7 +61,7 @@ function fsParseVal(v) {
 
 /* ── GET COLLECTION ── */
 async function fsGetAll(collection) {
-  const res = await fetch(`${FS_BASE}/${collection}${FS_KEY}`);
+  const res = await fsFetch(`${FS_BASE}/${collection}${FS_KEY}`);
   const data = await res.json();
   if (!data.documents) return [];
   return data.documents.map(doc => ({
@@ -72,7 +72,7 @@ async function fsGetAll(collection) {
 
 /* ── GET ONE ── */
 async function fsGet(collection, id) {
-  const res = await fetch(`${FS_BASE}/${collection}/${id}${FS_KEY}`);
+  const res = await fsFetch(`${FS_BASE}/${collection}/${id}${FS_KEY}`);
   if (!res.ok) return null;
   const doc = await res.json();
   return { id: doc.name.split('/').pop(), ...fsParse(doc.fields) };
@@ -95,7 +95,7 @@ async function fsSet(collection, id, data) {
 
 /* ── ADD (auto ID) ── */
 async function fsAdd(collection, data) {
-  const res = await fetch(`${FS_BASE}/${collection}${FS_KEY}`, {
+  const res = await fsFetch(`${FS_BASE}/${collection}${FS_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fields: fsSerialise(data) })
@@ -107,7 +107,7 @@ async function fsAdd(collection, data) {
 
 /* ── DELETE ── */
 async function fsDelete(collection, id) {
-  const res = await fetch(`${FS_BASE}/${collection}/${id}${FS_KEY}`, { method: 'DELETE' });
+  const res = await fsFetch(`${FS_BASE}/${collection}/${id}${FS_KEY}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Firestore delete failed: ${res.status}`);
 }
 
