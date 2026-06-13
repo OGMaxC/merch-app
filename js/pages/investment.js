@@ -28,6 +28,7 @@ registerPage('investment', async (container) => {
   container.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Ekonomi</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="openCompareProjects()">Jämför projekt</button>
       <button class="btn btn-primary btn-sm" onclick="openLogTxn()">+ Logga</button>
     </div>
     <div id="invest-content"></div>
@@ -578,6 +579,110 @@ function rebuildChart() {
     const txns = raw.map(normalizeTxn);
     el.innerHTML = renderBarChart(txns, person, project, year);
   });
+}
+
+/* ── PROJECT COMPARISON ── */
+async function openCompareProjects() {
+  const raw      = await fsGetAll('merch_transactions');
+  const txns     = raw.map(normalizeTxn).filter(t => t.direction === 'ut');
+  const projects = [...new Set(txns.map(t => t.project).filter(Boolean))].sort();
+
+  if (projects.length < 2) {
+    showToast('Minst två projekt behövs för jämförelse', 'error');
+    return;
+  }
+
+  const selA = projects[0];
+  const selB = projects[1];
+
+  openModal('Jämför projekt',
+    `<div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="field" style="flex:1;margin:0">
+        <label>Projekt A</label>
+        <select id="cmp-a" onchange="refreshCompare()" style="width:100%">
+          ${projects.map(p => `<option value="${p}" ${p===selA?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="flex:1;margin:0">
+        <label>Projekt B</label>
+        <select id="cmp-b" onchange="refreshCompare()" style="width:100%">
+          ${projects.map(p => `<option value="${p}" ${p===selB?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div id="compare-table">${renderCompareTable(txns, selA, selB)}</div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Stäng</button>`
+  );
+
+  // Store txns for refreshCompare
+  window._compareTxns = txns;
+}
+
+function refreshCompare() {
+  const a   = document.getElementById('cmp-a')?.value;
+  const b   = document.getElementById('cmp-b')?.value;
+  const el  = document.getElementById('compare-table');
+  if (!el || !a || !b) return;
+  el.innerHTML = renderCompareTable(window._compareTxns || [], a, b);
+}
+
+function renderCompareTable(txns, projA, projB) {
+  if (projA === projB) {
+    return `<div style="color:var(--text3);font-size:13px;padding:12px 0">Välj två olika projekt.</div>`;
+  }
+
+  const aTotal = {}, bTotal = {};
+  for (const t of txns) {
+    if (t.project === projA) aTotal[t.category] = (aTotal[t.category] || 0) + (t.amount || 0);
+    if (t.project === projB) bTotal[t.category] = (bTotal[t.category] || 0) + (t.amount || 0);
+  }
+
+  const cats = [...new Set([...Object.keys(aTotal), ...Object.keys(bTotal)])].sort();
+  const sumA = Object.values(aTotal).reduce((s, v) => s + v, 0);
+  const sumB = Object.values(bTotal).reduce((s, v) => s + v, 0);
+
+  function diffCell(a, b) {
+    const diff = b - a;
+    if (diff === 0) return `<span style="color:var(--text3)">—</span>`;
+    const pct  = a > 0 ? Math.round(Math.abs(diff) / a * 100) : null;
+    const col  = diff > 0 ? 'var(--amber)' : 'var(--green)';
+    const sign = diff > 0 ? '+' : '';
+    return `<span style="color:${col}">${sign}${fmt(diff)}${pct !== null ? ` <span style="font-size:10px;opacity:0.7">(${sign}${pct}%)</span>` : ''}</span>`;
+  }
+
+  const rows = cats.map(cat => {
+    const a = aTotal[cat] || 0;
+    const b = bTotal[cat] || 0;
+    return `<tr>
+      <td style="color:var(--text2);font-size:12px">${cat}</td>
+      <td style="text-align:right;color:${a>0?'var(--amber)':'var(--text3)'}">${a > 0 ? fmt(a) : '—'}</td>
+      <td style="text-align:right;color:${b>0?'var(--amber)':'var(--text3)'}">${b > 0 ? fmt(b) : '—'}</td>
+      <td style="text-align:right">${diffCell(a, b)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;font-size:11px;color:var(--text3);padding:6px 0;font-weight:500">Kategori</th>
+            <th style="text-align:right;font-size:11px;color:var(--gold);padding:6px 8px;font-weight:500">${projA}</th>
+            <th style="text-align:right;font-size:11px;color:var(--gold);padding:6px 8px;font-weight:500">${projB}</th>
+            <th style="text-align:right;font-size:11px;color:var(--text3);padding:6px 0;font-weight:500">Diff (B vs A)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+          <tr style="border-top:2px solid var(--border)">
+            <td style="font-weight:600;padding:8px 0;font-size:13px">Totalt</td>
+            <td style="text-align:right;font-weight:600;color:var(--amber);padding:8px">${fmt(sumA)}</td>
+            <td style="text-align:right;font-weight:600;color:var(--amber);padding:8px">${fmt(sumB)}</td>
+            <td style="text-align:right;font-weight:600;padding:8px 0">${diffCell(sumA, sumB)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
 }
 
 /* Keep old function names alive so any cached calls don't 404 */
