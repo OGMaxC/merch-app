@@ -220,32 +220,61 @@ async function renderRapporter() {
         </div>
       </div>
 
-      <!-- KOSTNAD PER PROJEKT -->
-      <div class="section" style="margin-bottom:20px">
-        <div class="section-header"><div class="section-title">Kostnad per projekt</div></div>
-        <div class="card">
-          ${Object.keys(projCosts).length ? Object.entries(projCosts)
-            .sort((a,b) => b[1].total - a[1].total)
-            .map(([proj, d], i, arr) => `
-            <div style="padding:14px 18px;${i < arr.length-1 ? 'border-bottom:1px solid var(--border)' : ''}">
-              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-                <div style="font-weight:600;font-size:14px">${proj}</div>
-                <div style="display:flex;gap:16px;font-size:12px">
-                  <span style="color:var(--text3)">Prod: <span style="color:var(--amber)">${fmt(d.prod)}</span></span>
-                  <span style="color:var(--text3)">Drift: <span style="color:var(--amber)">${fmt(d.drift)}</span></span>
-                  <span style="font-weight:600;color:var(--amber)">Totalt: ${fmt(d.total)}</span>
+      <!-- KOSTNAD PER PROJEKT + PIE -->
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;margin-bottom:20px;align-items:start">
+
+        <div class="section">
+          <div class="section-header"><div class="section-title">Kostnad per projekt</div></div>
+          <div class="card">
+            ${Object.keys(projCosts).length ? Object.entries(projCosts)
+              .sort((a,b) => b[1].total - a[1].total)
+              .map(([proj, d], pi, arr) => `
+              <div style="padding:16px 18px;${pi < arr.length-1 ? 'border-bottom:2px solid var(--border)' : ''}">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+                  <div style="font-weight:600;font-size:14px">${proj}</div>
+                  <div style="display:flex;gap:16px;font-size:12px">
+                    <span style="color:var(--text3)">Prod: <span style="color:var(--amber)">${fmt(d.prod)}</span></span>
+                    <span style="color:var(--text3)">Drift: <span style="color:var(--amber)">${fmt(d.drift)}</span></span>
+                    <span style="font-weight:600;color:var(--amber)">Totalt: ${fmt(d.total)}</span>
+                  </div>
                 </div>
-              </div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px">
-                ${Object.entries(d.cats).sort((a,b)=>b[1]-a[1]).map(([cat, amt]) => `
-                  <div style="background:var(--bg3);border-radius:5px;padding:4px 10px;font-size:11px">
-                    <span style="color:var(--text3)">${cat}</span>
-                    <span style="color:var(--amber);margin-left:6px">${fmt(amt)}</span>
-                  </div>`).join('')}
-              </div>
-            </div>`).join('')
-          : `<div class="card-body" style="color:var(--text3);font-size:13px">Inga projektutgifter loggade.</div>`}
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  ${Object.entries(d.cats).sort((a,b)=>b[1]-a[1]).map(([cat, amt]) => {
+                    const isProd = PROD_CATEGORIES.has(cat);
+                    const pct    = d.total > 0 ? Math.round(amt/d.total*100) : 0;
+                    return `<div style="display:grid;grid-template-columns:1fr 80px 44px;gap:8px;align-items:center">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;
+                          background:${isProd ? 'var(--gold)' : 'var(--text3)'}"></span>
+                        <span style="font-size:12px;color:var(--text2)">${cat}</span>
+                      </div>
+                      <span style="font-size:12px;color:var(--amber);text-align:right">${fmt(amt)}</span>
+                      <span style="font-size:11px;color:var(--text3);text-align:right">${pct}%</span>
+                    </div>`;
+                  }).join('')}
+                </div>
+              </div>`).join('')
+            : `<div class="card-body" style="color:var(--text3);font-size:13px">Inga projektutgifter loggade.</div>`}
+          </div>
         </div>
+
+        <div class="section">
+          <div class="section-header"><div class="section-title">Prod vs Drift</div></div>
+          <div class="card"><div class="card-body">
+            ${totalCost > 0 ? (() => {
+              const pie = renderPie(
+                [
+                  { label: 'Produktion', value: totalProd  },
+                  { label: 'Drift',      value: totalDrift },
+                ].filter(d => d.value > 0),
+                totalCost
+              );
+              return pie;
+            })()
+            : `<div style="color:var(--text3);font-size:13px">Inga kostnader ännu.</div>`}
+          </div></div>
+        </div>
+
       </div>
 
       <!-- PRISGRANSKNING + STORLEKSFÖRSÄLJNING -->
@@ -258,22 +287,27 @@ async function renderRapporter() {
           <div class="card">
             ${priceHealth.length ? `
               <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:grid;
-                   grid-template-columns:1fr 72px 72px 60px;gap:8px;font-size:10px;
+                   grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;font-size:10px;
                    color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">
-                <span>Artikel</span><span style="text-align:right">Kostnad</span>
-                <span style="text-align:right">Pris</span><span style="text-align:right">Faktor</span>
+                <span>Artikel</span>
+                <span style="text-align:right">Kostnad</span>
+                <span style="text-align:right">Pris</span>
+                <span style="text-align:right">Rek. pris</span>
+                <span style="text-align:right">Faktor</span>
               </div>
               ${priceHealth.map(i => {
-                const col   = i.ok === null ? 'var(--text3)' : i.ok ? 'var(--green)' : 'var(--red)';
-                const label = i.ratio === null ? '—' : `${i.ratio.toFixed(1)}×`;
-                return `<div style="padding:8px 14px;border-bottom:1px solid var(--bg3);display:grid;
-                              grid-template-columns:1fr 72px 72px 60px;gap:8px;align-items:center;font-size:12px">
-                  <span style="color:var(--text)">${i.name}</span>
-                  <span style="text-align:right;color:var(--text2)">${i.cost > 0 ? fmt(i.cost) : '—'}</span>
-                  <span style="text-align:right;color:var(--text2)">${i.price > 0 ? fmt(i.price) : '—'}</span>
-                  <span style="text-align:right;font-weight:600;color:${col}">${label}</span>
-                </div>`;
-              }).join('')}` 
+                const col      = i.ok === null ? 'var(--text3)' : i.ok ? 'var(--green)' : 'var(--red)';
+                const label    = i.ratio === null ? '—' : \`\${i.ratio.toFixed(1)}×\`;
+                const recPrice = i.cost > 0 ? fmt(i.cost * 2) : '—';
+                return \`<div style="padding:8px 14px;border-bottom:1px solid var(--bg3);display:grid;
+                              grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;align-items:center;font-size:12px">
+                  <span style="color:var(--text)">\${i.name}</span>
+                  <span style="text-align:right;color:var(--text2)">\${i.cost > 0 ? fmt(i.cost) : '—'}</span>
+                  <span style="text-align:right;color:var(--text2)">\${i.price > 0 ? fmt(i.price) : '—'}</span>
+                  <span style="text-align:right;color:var(--text3)">\${recPrice}</span>
+                  <span style="text-align:right;font-weight:600;color:\${col}">\${label}</span>
+                </div>\`;
+              }).join('')}`
             : `<div class="card-body" style="color:var(--text3);font-size:13px">Lägg till kostnad per enhet på artiklarna för att se prisgranskning.</div>`}
           </div>
         </div>
