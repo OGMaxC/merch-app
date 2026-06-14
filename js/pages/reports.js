@@ -5,6 +5,8 @@ const PROD_CATEGORIES = new Set([
   'Mixning / Mastering',
   'Pressning (vinyl, CD, kassett)',
   'Artwork / Foto / Video',
+  'Merch-produktion',
+  'Trycksaker',
 ]);
 
 registerPage('reports', async (container) => {
