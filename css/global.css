@@ -646,3 +646,10 @@ tr:hover td { background: var(--bg3); }
   z-index: 999;
 }
 [data-tooltip]:hover::after { opacity: 1; }
+
+/* ── REPORT FILTER BUTTONS ── */
+.report-filter-btn.active {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+}

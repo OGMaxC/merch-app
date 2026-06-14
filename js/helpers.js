@@ -181,3 +181,15 @@ function openHelp(page) {
     `<button class="btn btn-ghost" onclick="closeModal()">Stäng</button>`
   );
 }
+
+// Add reports to HELP_CONTENT
+HELP_CONTENT.reports = {
+  title: 'Rapporter — hjälp',
+  items: [
+    ['Filter (Allt/Kläder/Skivor)', 'Filtrerar intäkter och prisgranskning efter artikelkategori. Kostnader per projekt påverkas inte av filtret.'],
+    ['Produktionskostnad', 'Summan av kategorierna: Inspelning/Studio, Mixning/Mastering, Pressning och Artwork/Foto/Video.'],
+    ['Driftkostnad', 'Allt annat — Marknadsföring, Turné, Transport, mm.'],
+    ['Kostnad per projekt', 'Utgifter grupperade per projekt (t.ex. Bonegoat, Plaguelords). Loggas via Ekonomi-sidan.'],
+    ['Prisgranskning (2×-regeln)', 'Jämför kostnad per enhet mot försäljningspris. Målet är att priset ska vara minst dubbelt kostnaden. Kostnad per enhet sätts när du redigerar en artikel i Lager.'],
+  ]
+};
