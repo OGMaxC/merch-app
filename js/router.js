@@ -6,6 +6,7 @@ const ROUTES = {
   '/shows':      'shows',
   '/investment': 'investment',
   '/reports':    'reports',
+  '/print':      'print',
 };
 
 const PAGES = {};
