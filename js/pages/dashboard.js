@@ -5,6 +5,7 @@ registerPage('dashboard', async (container) => {
     <div class="page-header">
       <div>
         <div class="page-title">Översikt</div>
+        <button class="btn-help" onclick="openHelp('dashboard')" title="Hjälp">?</button>
         <div class="page-sub">Översikt — ${new Date().toLocaleDateString('sv-SE', {weekday:'long', day:'numeric', month:'long'})}</div>
       </div>
     </div>

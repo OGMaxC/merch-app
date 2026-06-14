@@ -125,3 +125,59 @@ function handleFsError(err, context) {
   }
   console.error(context, err);
 }
+
+/* ── HELP MODAL ── */
+const HELP_CONTENT = {
+  dashboard: {
+    title: 'Översikt — hjälp',
+    items: [
+      ['Intäkter', 'Total försäljning från alla stängda spelningar.'],
+      ['Lågt lager', 'Artiklar med färre än 5 enheter kvar i lager. Klicka för att gå till lagersidan.'],
+      ['Kommande spelningar', 'Spelningar med status "Kommande". Klicka på en spelning för att öppna tallyvyn.'],
+      ['Netto (Ekonomi)', 'Totala intäkter minus totala utgifter. Negativt värde betyder att bandet ännu inte gått ihop.'],
+    ]
+  },
+  inventory: {
+    title: 'Lager — hjälp',
+    items: [
+      ['Lägga till artikel', 'Klicka "+ Ny artikel". Välj typ: Kläder (har storlekar/färger) eller Skivor/Övrigt (enkel kvantitet).'],
+      ['Aktiv / Inaktiv', 'Aktiva artiklar syns i packlistan. Sätt en artikel inaktiv om den inte längre säljs — den försvinner från packlistan men data bevaras.'],
+      ['Behöver beställas', 'Visas automatiskt när en packlista kräver fler enheter än vad som finns i lager. Baseras på alla kommande spelningars packlistor.'],
+      ['Redigera artikel', 'Befintliga försäljningssiffror (sålda) bevaras när du redigerar ett lagersaldo — bara stocken uppdateras.'],
+    ]
+  },
+  shows: {
+    title: 'Spelningar — hjälp',
+    items: [
+      ['Flödet', '1. Skapa spelning  2. Bygg pack (vilka artiklar tar du med)  3. Tally under showen (tryck +/− när du säljer)  4. Stäng spelning (drar av från lagret och loggar intäkt).'],
+      ['Reserverat i packlistan', 'Antal enheter som redan är packade i andra kommande spelningar. Du kan packa mer än tillgängligt — röda siffror visar vad som saknas.'],
+      ['Återöppna spelning', 'En stängd spelning kan återöppnas genom att sätta status till "Kommande". Tally och pack bevaras. Du kan justera siffror och stänga igen — lagret uppdateras med differensen.'],
+      ['Återställ lager', 'Ångrar allt — lager återställs, försäljning raderas, spelningen sätts till kommande. Kan inte ångras.'],
+      ['Spara-knappen', 'Tally sparas automatiskt till enheten (localStorage) var 30:e sekund och när du navigerar bort. Du behöver inte trycka spara manuellt.'],
+    ]
+  },
+  investment: {
+    title: 'Ekonomi — hjälp',
+    items: [
+      ['Utgift vs Intäkt', 'Utgift = pengar som lämnar bandet. Intäkt = pengar som kommer in (försäljning, bidrag, mm). Spelningsintäkter loggas automatiskt som intäkt till Skatbo.'],
+      ['Projekt', 'Fritext — skriv vad du vill (Bonegoat, Plaguelords, Sommarturné 2026). Används för att gruppera kostnader och jämföra projekt mot varandra.'],
+      ['Skatbo', 'Bandkassan. Kostnader betalda ur kassan loggas på Skatbo. Alla spelningsintäkter går automatiskt hit.'],
+      ['Alla', 'Kostnad delad av hela bandet gemensamt utan att tillhöra en specifik person.'],
+      ['Jämför projekt', 'Visar en kategoriuppdelad tabell med kostnader för två projekt sida vid sida, med differens i kr och procent.'],
+    ]
+  },
+};
+
+function openHelp(page) {
+  const data = HELP_CONTENT[page];
+  if (!data) return;
+  const body = data.items.map(([term, desc]) =>
+    `<div style="margin-bottom:14px">
+      <div style="font-weight:600;font-size:13px;color:var(--gold);margin-bottom:3px">${term}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">${desc}</div>
+    </div>`
+  ).join('');
+  openModal(data.title, body,
+    `<button class="btn btn-ghost" onclick="closeModal()">Stäng</button>`
+  );
+}

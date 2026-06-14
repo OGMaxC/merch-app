@@ -3,7 +3,10 @@
 registerPage('shows', async (container) => {
   container.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Spelningar</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="page-title">Spelningar</div>
+        <button class="btn-help" onclick="openHelp('shows')" title="Hjälp">?</button>
+      </div>
       <button class="btn btn-primary btn-sm" onclick="openAddShow()">+ Lägg till spelning</button>
     </div>
     <div id="shows-content"></div>
@@ -194,7 +197,7 @@ function renderShowDetail(show, allItems, container) {
       </div>
       <div style="display:flex;gap:8px">
         ${show.status==='upcoming' ? `<button class="btn btn-ghost btn-sm" onclick="showPrintSheet()">Skriv ut packlista</button>` : ''}
-        ${show.status==='complete' ? `<button class="btn btn-danger btn-sm" onclick="confirmResetShowStock('${show.id}')">Återställ lager</button>` : ''}
+        ${show.status==='complete' ? `<button class="btn btn-danger btn-sm" data-tooltip="Ångrar all försäljning och återställer lagret. Kan inte ångras." onclick="confirmResetShowStock('${show.id}')">Återställ lager</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openPackRedigeraor('${show.id}')">Redigera pack</button>
         <button class="btn btn-ghost btn-sm" onclick="navigate('/shows')">Tillbaka</button>
       </div>

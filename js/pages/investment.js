@@ -27,7 +27,10 @@ function normalizeTxn(t) {
 registerPage('investment', async (container) => {
   container.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Ekonomi</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="page-title">Ekonomi</div>
+        <button class="btn-help" onclick="openHelp('investment')" title="Hjälp">?</button>
+      </div>
       <button class="btn btn-primary btn-sm" onclick="openLogTxn()">+ Logga</button>
     </div>
     <div id="invest-content"></div>

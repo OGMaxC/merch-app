@@ -3,7 +3,10 @@
 registerPage('inventory', async (container) => {
   container.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Lager</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="page-title">Lager</div>
+        <button class="btn-help" onclick="openHelp('inventory')" title="Hjälp">?</button>
+      </div>
       <div style="display:flex;gap:8px">
         <select id="inv-filter-cat" class="btn btn-ghost btn-sm" style="padding:5px 10px">
           <option value="">Alla kategorier</option>
@@ -82,7 +85,7 @@ async function renderLager() {
     const shortageHTML = shortages.length ? `
       <div class="section" style="margin-bottom:24px">
         <div class="section-header">
-          <div class="section-title" style="color:var(--red)">⚠ Behöver beställas</div>
+          <div class="section-title" style="color:var(--red)" data-tooltip="Visas när en packlista kräver fler enheter&#10;än vad som finns i lager.">⚠ Behöver beställas</div>
           <div style="font-size:12px;color:var(--text3)">${Object.keys(shortageGroups).length} artikel${Object.keys(shortageGroups).length > 1 ? 'ar' : ''}</div>
         </div>
         <div class="card">
