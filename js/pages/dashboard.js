@@ -14,15 +14,13 @@ registerPage('dashboard', async (container) => {
       <div class="stat-card"><div class="stat-label">Enheter i lager</div><div class="stat-value" id="d-enheter">—</div></div>
     </div>
     <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Lagervärdering</div>
-    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">
+    <div class="stat-grid dash-valuation-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
       <div class="stat-card"><div class="stat-label">Inköpskostnad</div><div class="stat-value" id="d-cost">—</div></div>
       <div class="stat-card"><div class="stat-label">Försäljningsvärde</div><div class="stat-value gold" id="d-value">—</div></div>
       <div class="stat-card"><div class="stat-label">Potentiell vinst</div><div class="stat-value green" id="d-margin">—</div></div>
-    </div>
-    <div class="stat-grid" style="grid-template-columns:repeat(1,1fr);margin-bottom:24px">
       <div class="stat-card"><div class="stat-label">Lågt lagersaldo</div><div class="stat-value amber" id="d-low">—</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="dash-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div class="section">
         <div class="section-header">
           <div class="section-title">Nästa spelning</div>
@@ -38,7 +36,7 @@ registerPage('dashboard', async (container) => {
         <div id="dash-invest"></div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+    <div class="dash-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
       <div class="section">
         <div class="section-header">
           <div class="section-title">Lågt lagersaldo</div>

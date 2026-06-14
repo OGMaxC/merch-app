@@ -653,3 +653,39 @@ tr:hover td { background: var(--bg3); }
   color: var(--bg);
   border-color: var(--gold);
 }
+
+/* ── DASHBOARD MOBILE LAYOUT ── */
+@media (max-width: 768px) {
+  /* Lagervärdering: 2×2 grid */
+  .dash-valuation-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* Nästa spelning, Investeringsstatus, Lågt lager, Bör beställas: single column */
+  .dash-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── EKONOMI MOBIL ── */
+@media (max-width: 768px) {
+  .person-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ── RAPPORTER MOBIL ── */
+@media (max-width: 768px) {
+  /* Dölj pie-chart per projekt */
+  .proj-pie-col {
+    display: none !important;
+  }
+  /* Prisgranskning + Storleksförsäljning: stapla vertikalt */
+  .report-bottom-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Prisgranskning: dölj Kostnad-kolumnen så tabellen får plats */
+  .report-bottom-grid table th:nth-child(2),
+  .report-bottom-grid table td:nth-child(2) {
+    display: none;
+  }
+}

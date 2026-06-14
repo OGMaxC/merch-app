@@ -248,7 +248,7 @@ async function renderRapporter() {
                     </div>`;
                   }).join('')}
                 </div>
-                <div>
+                <div class="proj-pie-col">
                   ${d.total > 0 ? renderPie(
                     [
                       { label: 'Produktion', value: d.prod  },
@@ -264,7 +264,7 @@ async function renderRapporter() {
       </div>
 
       <!-- PRISGRANSKNING + STORLEKSFÖRSÄLJNING -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div class="report-bottom-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
         <div class="section">
           <div class="section-header">

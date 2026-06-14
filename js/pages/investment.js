@@ -156,7 +156,7 @@ async function renderEkonomi() {
           <div class="stat-value" style="color:${netto>=0?'var(--green)':'var(--red)'}">${netto>=0?'+':''}${fmt(netto)}</div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(${PERSONS.length},1fr);gap:12px;margin-bottom:24px">
+      <div class="person-cards-grid" style="display:grid;grid-template-columns:repeat(${PERSONS.length},1fr);gap:12px;margin-bottom:24px">
         ${PERSONS.map(p => {
           const d = personSummary[p] || {ut:0,in:0};
           const n = d.in - d.ut;
