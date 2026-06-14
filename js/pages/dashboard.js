@@ -94,8 +94,9 @@ registerPage('dashboard', async (container) => {
       : `<div class="card"><div class="card-body" style="color:var(--text3);font-size:13px">Inga kommande spelningar. <a href="/shows" onclick="navigate('/shows');return false" style="color:var(--gold)">Lägg till</a></div></div>`;
 
     /* investment summary */
-    const invested  = transactions.filter(t => t.type === 'production').reduce((s, t) => s + (t.amount || 0), 0);
-    const recouped  = transactions.filter(t => t.type === 'sale').reduce((s, t) => s + (t.amount || 0), 0);
+    const txnsNorm  = transactions.map(t => t.direction ? t : { ...t, direction: t.type === 'sale' ? 'in' : 'ut' });
+    const invested  = txnsNorm.filter(t => t.direction === 'ut').reduce((s, t) => s + (t.amount || 0), 0);
+    const recouped  = txnsNorm.filter(t => t.direction === 'in').reduce((s, t) => s + (t.amount || 0), 0);
     const pct       = invested > 0 ? Math.min(100, Math.round(recouped / invested * 100)) : 0;
     document.getElementById('dash-invest').innerHTML = invested > 0
       ? `<div class="card"><div class="card-body">
