@@ -276,9 +276,9 @@ async function renderRapporter() {
                    grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;font-size:10px;
                    color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">
                 <span>Artikel</span>
-                <span style="text-align:right">Kostnad</span>
+                <span class="price-col-cost" style="text-align:right">Kostnad</span>
                 <span style="text-align:right">Pris</span>
-                <span style="text-align:right">Rek. pris</span>
+                <span class="price-col-rec" style="text-align:right">Rek. pris</span>
                 <span style="text-align:right">Faktor</span>
               </div>
               ${priceHealth.map(i => {
@@ -288,9 +288,9 @@ async function renderRapporter() {
                 return `<div style="padding:8px 14px;border-bottom:1px solid var(--bg3);display:grid;
                               grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;align-items:center;font-size:12px">
                   <span style="color:var(--text)">${i.name}</span>
-                  <span style="text-align:right;color:var(--text2)">${i.cost > 0 ? fmt(i.cost) : '—'}</span>
+                  <span class="price-col-cost" style="text-align:right;color:var(--text2)">${i.cost > 0 ? fmt(i.cost) : '—'}</span>
                   <span style="text-align:right;color:var(--text2)">${i.price > 0 ? fmt(i.price) : '—'}</span>
-                  <span style="text-align:right;color:var(--text3)">${recPrice}</span>
+                  <span class="price-col-rec" style="text-align:right;color:var(--text3)">${recPrice}</span>
                   <span style="text-align:right;font-weight:600;color:${col}">${label}</span>
                 </div>`;
               }).join('')}`

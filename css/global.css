@@ -689,3 +689,11 @@ tr:hover td { background: var(--bg3); }
     display: none;
   }
 }
+
+/* ── PRISGRANSKNING MOBIL — dölj extra kolumner ── */
+@media (max-width: 768px) {
+  .report-bottom-grid .price-col-cost,
+  .report-bottom-grid .price-col-rec {
+    display: none !important;
+  }
+}
