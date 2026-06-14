@@ -279,7 +279,7 @@ async function renderRapporter() {
                 <span class="price-col-cost" style="text-align:right">Kostnad</span>
                 <span style="text-align:right">Pris</span>
                 <span class="price-col-rec" style="text-align:right">Rek. pris</span>
-                <span style="text-align:right">Faktor</span>
+                <span style="text-align:right;padding-right:14px">Faktor</span>
               </div>
               ${priceHealth.map(i => {
                 const col      = i.ok === null ? 'var(--text3)' : i.ok ? 'var(--green)' : 'var(--red)';
@@ -291,7 +291,7 @@ async function renderRapporter() {
                   <span class="price-col-cost" style="text-align:right;color:var(--text2)">${i.cost > 0 ? fmt(i.cost) : '—'}</span>
                   <span style="text-align:right;color:var(--text2)">${i.price > 0 ? fmt(i.price) : '—'}</span>
                   <span class="price-col-rec" style="text-align:right;color:var(--text3)">${recPrice}</span>
-                  <span style="text-align:right;font-weight:600;color:${col}">${label}</span>
+                  <span style="text-align:right;font-weight:600;color:${col};padding-right:14px">${label}</span>
                 </div>`;
               }).join('')}`
             : `<div class="card-body" style="color:var(--text3);font-size:13px">Lägg till kostnad per enhet på artiklarna för att se prisgranskning.</div>`}
@@ -307,7 +307,7 @@ async function renderRapporter() {
               return `<div style="display:grid;grid-template-columns:36px 1fr 60px;gap:8px;align-items:center;margin-bottom:8px">
                 <span style="font-size:13px;font-weight:500;color:var(--text)">${sz}</span>
                 ${bar(sizeSålda[sz]||0, total)}
-                <span style="font-size:11px;color:var(--text2);text-align:right">${pct}% · ${sizeSålda[sz]||0} st</span>
+                <span style="font-size:11px;color:var(--text2);text-align:right;padding-right:4px">${pct}% · ${sizeSålda[sz]||0} st</span>
               </div>`;
             }).join('') || `<div style="color:var(--text3);font-size:13px">Ingen kläddata ännu.</div>`}
           </div></div>
