@@ -272,26 +272,26 @@ async function renderRapporter() {
           </div>
           <div class="card">
             ${priceHealth.length ? `
-              <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:grid;
+              <div style="padding:8px 18px 8px 14px;border-bottom:1px solid var(--border);display:grid;
                    grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;font-size:10px;
                    color:var(--text3);text-transform:uppercase;letter-spacing:0.06em">
                 <span>Artikel</span>
                 <span class="price-col-cost" style="text-align:right">Kostnad</span>
                 <span style="text-align:right">Pris</span>
                 <span class="price-col-rec" style="text-align:right">Rek. pris</span>
-                <span style="text-align:right;padding-right:14px">Faktor</span>
+                <span style="text-align:right">Faktor</span>
               </div>
               ${priceHealth.map(i => {
                 const col      = i.ok === null ? 'var(--text3)' : i.ok ? 'var(--green)' : 'var(--red)';
                 const label    = i.ratio === null ? '—' : `${i.ratio.toFixed(1)}×`;
                 const recPrice = i.cost > 0 ? fmt(i.cost * 2) : '—';
-                return `<div style="padding:8px 14px;border-bottom:1px solid var(--bg3);display:grid;
+                return `<div style="padding:8px 18px 8px 14px;border-bottom:1px solid var(--bg3);display:grid;
                               grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;align-items:center;font-size:12px">
                   <span style="color:var(--text)">${i.name}</span>
                   <span class="price-col-cost" style="text-align:right;color:var(--text2)">${i.cost > 0 ? fmt(i.cost) : '—'}</span>
                   <span style="text-align:right;color:var(--text2)">${i.price > 0 ? fmt(i.price) : '—'}</span>
                   <span class="price-col-rec" style="text-align:right;color:var(--text3)">${recPrice}</span>
-                  <span style="text-align:right;font-weight:600;color:${col};padding-right:14px">${label}</span>
+                  <span style="text-align:right;font-weight:600;color:${col}">${label}</span>
                 </div>`;
               }).join('')}`
             : `<div class="card-body" style="color:var(--text3);font-size:13px">Lägg till kostnad per enhet på artiklarna för att se prisgranskning.</div>`}
@@ -304,10 +304,10 @@ async function renderRapporter() {
             ${ALL_SIZES.filter(sz => (sizeStock[sz]||0)+(sizeSålda[sz]||0) > 0).map(sz => {
               const total = (sizeStock[sz]||0) + (sizeSålda[sz]||0);
               const pct   = total > 0 ? Math.round((sizeSålda[sz]||0) / total * 100) : 0;
-              return `<div style="display:grid;grid-template-columns:36px 1fr 60px;gap:8px;align-items:center;margin-bottom:8px">
+              return `<div style="display:grid;grid-template-columns:36px 1fr 70px;gap:8px;align-items:center;margin-bottom:8px;padding-right:4px">
                 <span style="font-size:13px;font-weight:500;color:var(--text)">${sz}</span>
                 ${bar(sizeSålda[sz]||0, total)}
-                <span style="font-size:11px;color:var(--text2);text-align:right;padding-right:4px">${pct}% · ${sizeSålda[sz]||0} st</span>
+                <span style="font-size:11px;color:var(--text2);text-align:right">${pct}% · ${sizeSålda[sz]||0} st</span>
               </div>`;
             }).join('') || `<div style="color:var(--text3);font-size:13px">Ingen kläddata ännu.</div>`}
           </div></div>
