@@ -297,16 +297,16 @@ async function renderRapporter() {
               </div>
               ${priceHealth.map(i => {
                 const col      = i.ok === null ? 'var(--text3)' : i.ok ? 'var(--green)' : 'var(--red)';
-                const label    = i.ratio === null ? '—' : \`\${i.ratio.toFixed(1)}×\`;
+                const label    = i.ratio === null ? '—' : `${i.ratio.toFixed(1)}×`;
                 const recPrice = i.cost > 0 ? fmt(i.cost * 2) : '—';
-                return \`<div style="padding:8px 14px;border-bottom:1px solid var(--bg3);display:grid;
+                return `<div style="padding:8px 14px;border-bottom:1px solid var(--bg3);display:grid;
                               grid-template-columns:1fr 72px 72px 72px 60px;gap:6px;align-items:center;font-size:12px">
-                  <span style="color:var(--text)">\${i.name}</span>
-                  <span style="text-align:right;color:var(--text2)">\${i.cost > 0 ? fmt(i.cost) : '—'}</span>
-                  <span style="text-align:right;color:var(--text2)">\${i.price > 0 ? fmt(i.price) : '—'}</span>
-                  <span style="text-align:right;color:var(--text3)">\${recPrice}</span>
-                  <span style="text-align:right;font-weight:600;color:\${col}">\${label}</span>
-                </div>\`;
+                  <span style="color:var(--text)">${i.name}</span>
+                  <span style="text-align:right;color:var(--text2)">${i.cost > 0 ? fmt(i.cost) : '—'}</span>
+                  <span style="text-align:right;color:var(--text2)">${i.price > 0 ? fmt(i.price) : '—'}</span>
+                  <span style="text-align:right;color:var(--text3)">${recPrice}</span>
+                  <span style="text-align:right;font-weight:600;color:${col}">${label}</span>
+                </div>`;
               }).join('')}`
             : `<div class="card-body" style="color:var(--text3);font-size:13px">Lägg till kostnad per enhet på artiklarna för att se prisgranskning.</div>`}
           </div>
