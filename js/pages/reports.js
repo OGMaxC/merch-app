@@ -220,24 +220,19 @@ async function renderRapporter() {
         </div>
       </div>
 
-      <!-- KOSTNAD PER PROJEKT + PIE -->
-      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;margin-bottom:20px;align-items:start">
-
-        <div class="section">
-          <div class="section-header"><div class="section-title">Kostnad per projekt</div></div>
-          <div class="card">
-            ${Object.keys(projCosts).length ? Object.entries(projCosts)
-              .sort((a,b) => b[1].total - a[1].total)
-              .map(([proj, d], pi, arr) => `
-              <div style="padding:16px 18px;${pi < arr.length-1 ? 'border-bottom:2px solid var(--border)' : ''}">
-                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-                  <div style="font-weight:600;font-size:14px">${proj}</div>
-                  <div style="display:flex;gap:16px;font-size:12px">
-                    <span style="color:var(--text3)">Prod: <span style="color:var(--amber)">${fmt(d.prod)}</span></span>
-                    <span style="color:var(--text3)">Drift: <span style="color:var(--amber)">${fmt(d.drift)}</span></span>
-                    <span style="font-weight:600;color:var(--amber)">Totalt: ${fmt(d.total)}</span>
-                  </div>
-                </div>
+      <!-- KOSTNAD PER PROJEKT med pie per projekt -->
+      <div class="section" style="margin-bottom:20px">
+        <div class="section-header"><div class="section-title">Kostnad per projekt</div></div>
+        <div class="card">
+          ${Object.keys(projCosts).length ? Object.entries(projCosts)
+            .sort((a,b) => b[1].total - a[1].total)
+            .map(([proj, d], pi, arr) => `
+            <div style="padding:16px 18px;${pi < arr.length-1 ? 'border-bottom:2px solid var(--border)' : ''}">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+                <div style="font-weight:600;font-size:14px">${proj}</div>
+                <span style="font-weight:600;color:var(--amber)">Totalt: ${fmt(d.total)}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 160px;gap:20px;align-items:start">
                 <div style="display:flex;flex-direction:column;gap:6px">
                   ${Object.entries(d.cats).sort((a,b)=>b[1]-a[1]).map(([cat, amt]) => {
                     const isProd = PROD_CATEGORIES.has(cat);
@@ -253,28 +248,19 @@ async function renderRapporter() {
                     </div>`;
                   }).join('')}
                 </div>
-              </div>`).join('')
-            : `<div class="card-body" style="color:var(--text3);font-size:13px">Inga projektutgifter loggade.</div>`}
-          </div>
+                <div>
+                  ${d.total > 0 ? renderPie(
+                    [
+                      { label: 'Produktion', value: d.prod  },
+                      { label: 'Drift',      value: d.drift },
+                    ].filter(x => x.value > 0),
+                    d.total
+                  ) : ''}
+                </div>
+              </div>
+            </div>`).join('')
+          : `<div class="card-body" style="color:var(--text3);font-size:13px">Inga projektutgifter loggade.</div>`}
         </div>
-
-        <div class="section">
-          <div class="section-header"><div class="section-title">Prod vs Drift</div></div>
-          <div class="card"><div class="card-body">
-            ${totalCost > 0 ? (() => {
-              const pie = renderPie(
-                [
-                  { label: 'Produktion', value: totalProd  },
-                  { label: 'Drift',      value: totalDrift },
-                ].filter(d => d.value > 0),
-                totalCost
-              );
-              return pie;
-            })()
-            : `<div style="color:var(--text3);font-size:13px">Inga kostnader ännu.</div>`}
-          </div></div>
-        </div>
-
       </div>
 
       <!-- PRISGRANSKNING + STORLEKSFÖRSÄLJNING -->
