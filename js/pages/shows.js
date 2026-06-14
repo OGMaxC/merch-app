@@ -940,10 +940,10 @@ function showPrintSheet() {
   if (!show || !allItems) return;
 
   const pack = show.pack || [];
-  const packedItems = pack.map(p => {
+  const packedItems = sortByCategory(pack.map(p => {
     const item = allItems.find(i => i.id === p.itemId);
-    return item ? { ...item, packQty: p.qty } : null;
-  }).filter(Boolean);
+    return item ? { ...item, packQty: p.qty, packVariants: p.variants || {} } : null;
+  }).filter(Boolean));
 
   const sheetHTML = buildPrintSheet(show, packedItems);
 
