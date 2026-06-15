@@ -712,17 +712,24 @@ async function resetShowStock(id) {
 
 /* ── DELETE PACK ── */
 function confirmDeletePack(showId) {
-  confirmAction('Ta bort spelningspacket? Det går inte att ångra.', async () => {
-    try {
-      const show = await fsGet('merch_shows', showId);
-      if (!show) return;
-      await fsSet('merch_shows', showId, { ...show, pack: [] });
-      showToast('Pack borttaget');
-      await openShowDetail(showId);
-    } catch(err) {
-      handleFsError(err, 'Kunde inte ta bort pack');
-    }
-  });
+  openModal('Ta bort pack',
+    `<div style="font-size:13px;color:var(--text2)">Ta bort spelningspacket? Det går inte att ångra.</div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-danger" onclick="closeModal();doDeletePack('${showId}')">Ta bort</button>`
+  );
+}
+
+async function doDeletePack(showId) {
+  try {
+    const show = await fsGet('merch_shows', showId);
+    if (!show) { showToast('Spelning hittades inte', 'error'); return; }
+    // Write only the pack field
+    await fsSet('merch_shows', showId, { ...show, pack: [] });
+    showToast('Pack borttaget');
+    await openShowDetail(showId);
+  } catch(err) {
+    handleFsError(err, 'Kunde inte ta bort pack');
+  }
 }
 
 /* ── RESERVATION HELPER ── */
