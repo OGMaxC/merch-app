@@ -193,3 +193,14 @@ HELP_CONTENT.reports = {
     ['Prisgranskning (2×-regeln)', 'Jämför kostnad per enhet mot försäljningspris. Målet är att priset ska vara minst dubbelt kostnaden. Kostnad per enhet sätts när du redigerar en artikel i Lager.'],
   ]
 };
+
+HELP_CONTENT.deliveries = {
+  title: 'Utleveranser — hjälp',
+  items: [
+    ['Ny utleverans', 'Logga när ni skickar artiklar till en distributör eller butik. Lagret minskar direkt med det antal ni levererar.'],
+    ['Inpris per enhet', 'Det pris distributören köper in för — ofta lägre än ert säljpris. Används för att beräkna utestående fordran.'],
+    ['Logga betalning', 'När ni får en avräkning loggar ni beloppet här. Betalningen går automatiskt till Skatbo som intäkt. Ni kan logga flera delbetalningar.'],
+    ['Reglerad', 'Markeras automatiskt när totalbetalningen täcker hela leveransvärdet. Kan också markeras manuellt.'],
+    ['Ta bort utleverans', 'Lagret återställs INTE automatiskt vid borttagning — justera manuellt under Lager om det behövs.'],
+  ]
+};
