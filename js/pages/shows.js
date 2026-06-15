@@ -199,7 +199,7 @@ function renderShowDetail(show, allItems, container) {
         ${show.status==='upcoming' ? `<button class="btn btn-ghost btn-sm" onclick="showPrintSheet()">Skriv ut packlista</button>` : ''}
         ${show.status==='complete' ? `<button class="btn btn-danger btn-sm" data-tooltip="Ångrar all försäljning och återställer lagret. Kan inte ångras." onclick="confirmResetShowStock('${show.id}')">Återställ lager</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openPackRedigeraor('${show.id}')">Redigera pack</button>
-        ${packedItems.length === 0 && (show.pack||[]).length > 0 ? `<button class="btn btn-danger btn-sm" onclick="confirmDeletePack('${show.id}')">Ta bort pack</button>` : ''}
+        ${packedItems.length === 0 ? `<button class="btn btn-danger btn-sm" onclick="confirmDeletePack('${show.id}')">Ta bort pack</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="navigate('/shows')">Tillbaka</button>
       </div>
     </div>
