@@ -200,6 +200,7 @@ function renderShowDetail(show, allItems, container) {
         ${show.status==='complete' ? `<button class="btn btn-danger btn-sm" data-tooltip="Ångrar all försäljning och återställer lagret. Kan inte ångras." onclick="confirmResetShowStock('${show.id}')">Återställ lager</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="openPackRedigeraor('${show.id}')">Redigera pack</button>
         ${packedItems.length === 0 ? `<button class="btn btn-danger btn-sm" onclick="confirmDeletePack('${show.id}')">Ta bort pack</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteShow('${show.id}')">Ta bort spelning</button>
         <button class="btn btn-ghost btn-sm" onclick="navigate('/shows')">Tillbaka</button>
       </div>
     </div>
@@ -1022,4 +1023,25 @@ function showPrintSheet() {
 </body>
 </html>`);
   win.document.close();
+}
+
+/* ── DELETE SHOW ── */
+function confirmDeleteShow(showId) {
+  openModal('Ta bort spelning',
+    `<div style="font-size:13px;color:var(--text2);line-height:1.6">
+      Ta bort spelningen permanent? Lager och transaktioner som påverkats av denna spelning återställs <strong>inte</strong> automatiskt.
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Avbryt</button>
+     <button class="btn btn-danger" onclick="closeModal();doDeleteShow('${showId}')">Ta bort</button>`
+  );
+}
+
+async function doDeleteShow(showId) {
+  try {
+    await fsDelete('merch_shows', showId);
+    showToast('Spelning borttagen');
+    navigate('/shows');
+  } catch(err) {
+    handleFsError(err, 'Kunde inte ta bort spelning');
+  }
 }
