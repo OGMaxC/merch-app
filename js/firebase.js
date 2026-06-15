@@ -31,7 +31,11 @@ function fsVal(val) {
   if (typeof val === 'boolean')  return { booleanValue: val };
   if (typeof val === 'number')   return { integerValue: String(Math.round(val)) };
   if (typeof val === 'string')   return { stringValue: val };
-  if (Array.isArray(val))        return { arrayValue: { values: val.map(fsVal) } };
+  if (Array.isArray(val)) {
+    const serialised = { arrayValue: {} };
+    if (val.length > 0) serialised.arrayValue.values = val.map(fsVal);
+    return serialised;
+  }
   if (typeof val === 'object')   return { mapValue: { fields: fsSerialise(val) } };
   return { stringValue: String(val) };
 }
