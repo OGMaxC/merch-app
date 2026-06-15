@@ -713,12 +713,15 @@ async function resetShowStock(id) {
 /* ── DELETE PACK ── */
 function confirmDeletePack(showId) {
   confirmAction('Ta bort spelningspacket? Det går inte att ångra.', async () => {
-    const show = await fsGet('merch_shows', showId);
-    if (!show) return;
-    await fsSet('merch_shows', showId, { ...show, pack: [] });
-    showToast('Pack borttaget');
-    navigate('/shows/' + showId);
-    await openShowDetail(showId);
+    try {
+      const show = await fsGet('merch_shows', showId);
+      if (!show) return;
+      await fsSet('merch_shows', showId, { ...show, pack: [] });
+      showToast('Pack borttaget');
+      await openShowDetail(showId);
+    } catch(err) {
+      handleFsError(err, 'Kunde inte ta bort pack');
+    }
   });
 }
 
